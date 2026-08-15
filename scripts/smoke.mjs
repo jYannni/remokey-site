@@ -9,6 +9,7 @@
 // hash would fail on every release, and a check that cries wolf gets switched off.
 // "Both URLs serve the same bytes" is the property that holds forever.
 
+import { existsSync, realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { SUPPORT_EMAIL } from '../src/config.mjs';
 
@@ -23,13 +24,19 @@ export async function runChecks({ fetchImpl = fetch, base = 'https://remokey.app
     catch (e) { failures.push(`${url}: request failed — ${e.message}`); return null; }
   };
 
+  // Each page is fetched exactly once and its body retained. A real Response body
+  // can only be consumed once, so reading it inside the loop is the correct shape
+  // rather than merely the cheaper one — and fetching /support/ twice made a single
+  // unreachable page report as two separate failures.
+  const bodies = {};
   for (const path of ['/', '/support/', '/privacy/']) {
     const r = await get(base + path);
-    if (r && r.status !== 200) failures.push(`${path}: expected 200, got ${r.status}`);
+    if (!r) continue;
+    if (r.status !== 200) failures.push(`${path}: expected 200, got ${r.status}`);
+    bodies[path] = await r.text();
   }
 
-  const support = await get(base + '/support/');
-  if (support && !(await support.text()).includes(SUPPORT_EMAIL)) {
+  if (bodies['/support/'] !== undefined && !bodies['/support/'].includes(SUPPORT_EMAIL)) {
     failures.push(`/support/: page does not contain ${SUPPORT_EMAIL}`);
   }
 
@@ -69,11 +76,20 @@ export async function runChecks({ fetchImpl = fetch, base = 'https://remokey.app
 }
 
 // CLI entry: `node scripts/smoke.mjs`
-// Same defect, same fix as scripts/check-subresources.mjs — the hand-built
-// `file://${process.argv[1]}` comparison fails OPEN on any path containing a
-// space, so the script would exit 0 having checked nothing. In CI that is a
-// green tick for a check that never ran.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Direct-invocation check. Three ways this has already failed open, each exiting 0
+// having checked nothing — the worst possible outcome for a guard, since CI reports
+// a green tick: a hand-built `file://${argv[1]}` breaks on paths containing spaces;
+// argv[1] is the raw path while import.meta.url is symlink-resolved, so any run
+// through a symlink (macOS /var -> /private/var, most notably $TMPDIR) misses; and
+// an absent argv[1] would throw.
+//
+// Kept byte-identical to the same block in scripts/check-subresources.mjs.
+const entry = process.argv[1];
+const entryHref = entry
+  ? pathToFileURL(existsSync(entry) ? realpathSync(entry) : entry).href
+  : null;
+
+if (entryHref && import.meta.url === entryHref) {
   const { failures } = await runChecks({});
   if (failures.length) {
     console.error('\nSmoke checks FAILED:\n');

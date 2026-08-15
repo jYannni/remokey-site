@@ -23,6 +23,19 @@ test('passes when every page answers, redirects work, and the feeds agree', asyn
   assert.deepEqual(failures, []);
 });
 
+// Without this, deleting the page-status loop entirely leaves the suite green —
+// found by mutating each check to a no-op and seeing which tests died. The loop
+// is the one check nothing was holding in place.
+test('fails when a page does not answer 200', async () => {
+  const fetchImpl = async (url) =>
+    url === 'https://remokey.app/privacy/' ? ok('', 404) : healthy(url);
+  const { failures } = await runChecks({ fetchImpl });
+  assert.ok(
+    failures.some((f) => /privacy/.test(f) && /404/.test(f)),
+    `expected a failure naming /privacy/ and 404, got: ${JSON.stringify(failures)}`
+  );
+});
+
 test('fails when the support page omits the address', async () => {
   const fetchImpl = async (url) =>
     url.includes('support') && !url.includes('www.') && url.startsWith('https://')

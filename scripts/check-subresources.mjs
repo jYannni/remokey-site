@@ -6,7 +6,7 @@
 // This is why the check parses rather than grepping for "https://".
 
 import { parse } from 'node-html-parser';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -104,10 +104,20 @@ export function checkDir(dir) {
 }
 
 // CLI entry: `node scripts/check-subresources.mjs dist`
-// The naive `file://${process.argv[1]}` comparison failed OPEN on any path with a
-// space or non-ASCII character: the script exited 0 having checked nothing, and CI
-// reported a pass. pathToFileURL percent-encodes the same way import.meta.url does.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Direct-invocation check. Three ways this has already failed open, each exiting 0
+// having checked nothing — the worst possible outcome for a guard, since CI reports
+// a green tick: a hand-built `file://${argv[1]}` breaks on paths containing spaces;
+// argv[1] is the raw path while import.meta.url is symlink-resolved, so any run
+// through a symlink (macOS /var -> /private/var, most notably $TMPDIR) misses; and
+// an absent argv[1] would throw.
+//
+// Kept byte-identical to the same block in scripts/smoke.mjs.
+const entry = process.argv[1];
+const entryHref = entry
+  ? pathToFileURL(existsSync(entry) ? realpathSync(entry) : entry).href
+  : null;
+
+if (entryHref && import.meta.url === entryHref) {
   const dir = process.argv[2] ?? 'dist';
   const v = checkDir(dir);
   if (v.length) {
