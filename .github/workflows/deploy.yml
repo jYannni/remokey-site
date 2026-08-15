@@ -1,0 +1,74 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build, test, and guard
+        uses: withastro/action@v6
+        with:
+          node-version: 24
+          build-cmd: npm test
+
+      # `npm test` chains build && node --test && check-subresources with `&&`,
+      # so a failure anywhere produces the same red. Worse, a guard that silently
+      # stops running exits 0 and looks identical to a guard that passed. This step
+      # re-runs the guard alone and asserts on its success output, so "the guard
+      # ran and found nothing" is proven rather than inferred from an exit code.
+      #
+      # This depends on `dist/` still being in the workspace after withastro/action.
+      # It is: the action is a composite that builds in place and hands
+      # actions/upload-pages-artifact the `dist/` path — nothing removes it.
+      - name: Prove the subresource guard executed
+        run: |
+          set -o pipefail
+          out="$(node scripts/check-subresources.mjs dist)"
+          echo "$out"
+          echo "$out" | grep -q 'No third-party subresources' || {
+            echo "::error::Guard produced no success output — it may not have run at all."
+            exit 1
+          }
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+  # EXPECTED TO FAIL until Task 10 points remokey.app at this site. The appcast
+  # checks inside it should still pass — they exercise updates.remokey.app, which
+  # is already live. A failure naming the appcast is a real problem; failures
+  # naming remokey.app are just DNS that does not exist yet.
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Wait for CDN propagation
+        run: sleep 30
+      - name: Smoke-check the live site
+        run: node scripts/smoke.mjs
