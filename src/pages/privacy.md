@@ -6,7 +6,7 @@ description: ReMoKey has no servers, no accounts and no analytics.
 
 # Privacy Policy — ReMoKey
 
-**Last updated: 14 August 2026**
+**Last updated: 15 August 2026**
 
 ReMoKey lets your iPhone act as a keyboard, trackpad and remote for your own Mac.
 
@@ -31,10 +31,11 @@ on-device. If your language has no on-device model downloaded, dictation refuses
 to start rather than quietly sending your voice to Apple. This is deliberate: the
 app types into your Mac, and what you dictate could be anything.
 
-**The Mac app checks for updates.** It fetches a small file from GitHub to see
-whether a newer version exists. GitHub therefore sees your IP address and the fact
-that a request was made, as it would for any download. No information about you,
-your Mac or your usage is included in that request. You can turn automatic checks
+**The Mac app checks for updates.** It fetches a small file from
+updates.remokey.app to see whether a newer version exists. That address is
+hosted by GitHub, which therefore sees your IP address and the fact that a
+request was made, as it would for any download. No information about you, your
+Mac or your usage is included in that request. You can turn automatic checks
 off in the Mac app.
 
 Those are the only ways ReMoKey uses the network. There are no other services, no

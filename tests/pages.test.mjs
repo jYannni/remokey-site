@@ -9,6 +9,9 @@ test('privacy page is built', () => {
   assert.ok(existsSync(new URL('../dist/privacy/index.html', import.meta.url)));
 });
 
+// Weaker than it looks: the SUPPORT_EMAIL assertion is satisfied by Footer.astro's
+// mailto alone, so it does not prove the policy body names the address. The
+// placeholder case — the failure that matters — is guarded by the last test here.
 test('privacy page states no collection and names the support address', () => {
   const html = read('privacy/index.html');
   assert.match(html, /collect/i);
@@ -19,7 +22,7 @@ test('privacy page discloses the update check', () => {
   const html = read('privacy/index.html');
   assert.ok(
     html.includes('updates.remokey.app'),
-    'privacy policy must disclose the Sparkle update check — it is the one outbound request the Mac app makes'
+    'privacy policy must name the host the Mac contacts for updates — the design spec requires the specific hostname, not just "GitHub"'
   );
 });
 
