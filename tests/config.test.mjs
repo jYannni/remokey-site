@@ -27,11 +27,19 @@ test('support address matches the literal the app compiles in', () => {
   assert.equal(
     SUPPORT_EMAIL,
     'support@remokey.app',
-    'Must equal ReportDestination.address in the RemoteKeyboard repo. If you are ' +
-    'changing the support address, change it in BOTH repos and in both tests.'
+    'Must equal ReportDestination.address in the RemoteKeyboard repo, which is ' +
+    'still the unset placeholder remokey+reports@example.com — do NOT copy that ' +
+    'value here. Task 12 sets the Swift side to support@remokey.app once the ' +
+    'mailbox is confirmed receiving. If you are deliberately changing the support ' +
+    'address, change it in BOTH repos and in both tests.'
   );
 });
 
-test('site URL has no trailing slash', () => {
-  assert.equal(SITE_URL, 'https://remokey.app');
+test('site URL is the canonical apex origin', () => {
+  assert.equal(
+    SITE_URL,
+    'https://remokey.app',
+    'Astro derives canonical URLs from this. It must be the apex origin with no ' +
+    'trailing slash, no www, and no path.'
+  );
 });
