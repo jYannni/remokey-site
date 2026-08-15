@@ -11,11 +11,16 @@ reasonably can, but please expect days rather than hours.
 
 ## Reporting a problem
 
-**Use "Report a Problem" inside the app rather than writing from scratch.** It
-gathers recent connection events from both your Mac and your iPhone and packages
-them into a report. That difference matters: a plain email usually says "it
-won't connect", which cannot be diagnosed, while a report says which end failed
-and when.
+**Use the app's own reporter rather than writing from scratch.** On your iPhone it
+is **Report a problem**, in Settings; on your Mac it is **Report a Problem…** in the
+menu-bar menu. Either one gathers recent connection events and packages them into a
+report.
+
+If your iPhone is connected to your Mac when you send it, the report carries both
+halves of the story. If it is not — which is exactly the case when the problem is
+that they will not connect — the report says so and is sent with your iPhone's half
+alone. That is still far more useful than a plain email: "it won't connect" cannot be
+diagnosed, while a report says which end failed and when.
 
 The app opens an email addressed to
 [support@remokey.app](mailto:support@remokey.app) with the report attached.

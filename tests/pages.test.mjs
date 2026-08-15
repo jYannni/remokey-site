@@ -5,6 +5,15 @@ import { SUPPORT_EMAIL } from '../src/config.mjs';
 
 const read = (p) => readFileSync(new URL(`../dist/${p}`, import.meta.url), 'utf8');
 
+// The footer carries a mailto on every page, so `html.includes(SUPPORT_EMAIL)` is
+// satisfied without the body naming the address at all. Scope assertions about page
+// content to <main> so they test the page rather than the chrome.
+const mainOf = (p) => {
+  const m = read(p).match(/<main[^>]*>([\s\S]*?)<\/main>/);
+  assert.ok(m, `no <main> found in ${p} — has Base.astro changed?`);
+  return m[1];
+};
+
 test('privacy page is built', () => {
   assert.ok(existsSync(new URL('../dist/privacy/index.html', import.meta.url)));
 });
@@ -59,4 +68,12 @@ test('support page routes users through the in-app reporter', () => {
     /report a problem/i,
     'support page must point at the in-app reporter — an email address alone produces "it does not work" reports'
   );
+});
+
+test('support page body names the address, not just the footer', () => {
+  assert.ok(mainOf('support/index.html').includes(SUPPORT_EMAIL));
+});
+
+test('privacy page body names the address, not just the footer', () => {
+  assert.ok(mainOf('privacy/index.html').includes(SUPPORT_EMAIL));
 });
