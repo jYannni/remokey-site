@@ -1,17 +1,45 @@
 ---
-
+import Base from '../layouts/Base.astro';
+import DeviceArt from '../components/DeviceArt.astro';
+import { SUPPORT_EMAIL } from '../config.mjs';
 ---
+<Base
+  title="ReMoKey — your iPhone is your Mac's keyboard and trackpad"
+  description="Control your Mac from your iPhone over your own Wi-Fi. No account, no cloud, no screen mirroring."
+>
+  <section style="text-align:center;padding:2rem 0 1rem">
+    <h1>Your iPhone is your Mac's keyboard and trackpad.</h1>
+    <p style="color:var(--muted);font-size:1.1rem;max-width:34rem;margin:0 auto 2rem">
+      Over your own Wi-Fi. No account, no cloud, no screen mirroring.
+    </p>
+    <DeviceArt />
+    <p style="margin-top:2rem">
+      <span style="display:inline-block;border:1px dashed var(--line);border-radius:999px;padding:.5rem 1.25rem;color:var(--muted)">
+        Coming soon
+      </span>
+    </p>
+  </section>
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+  <section style="margin-top:3rem">
+    <h2>What it does</h2>
+    <ul>
+      <li><strong>Trackpad</strong> — move, click, scroll, and use gestures.</li>
+      <li><strong>Full keyboard</strong> — including modifiers and dictation.</li>
+      <li><strong>Media and volume keys</strong> — play, skip, and adjust volume.</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:2.5rem">
+    <h2>It stays on your network</h2>
+    <p>
+      ReMoKey has no accounts and no servers. Your input goes straight from your
+      iPhone to your Mac over your own Wi-Fi — there is nowhere else for it to go.
+      <a href="/privacy/">Read the privacy policy</a>.
+    </p>
+  </section>
+
+  <section style="margin-top:2.5rem">
+    <h2>Questions</h2>
+    <p>Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
+  </section>
+</Base>

@@ -77,3 +77,28 @@ test('support page body names the address, not just the footer', () => {
 test('privacy page body names the address, not just the footer', () => {
   assert.ok(mainOf('privacy/index.html').includes(SUPPORT_EMAIL));
 });
+
+test('landing page is built with the coming-soon state', () => {
+  const html = read('index.html');
+  assert.match(html, /coming soon/i);
+});
+
+test('landing page offers no download links before the iPhone app ships', () => {
+  const html = read('index.html');
+  assert.ok(
+    !/\.dmg/i.test(html),
+    'no DMG link at launch — the Mac host is useless without the iPhone app'
+  );
+  assert.ok(
+    !/apps\.apple\.com/i.test(html),
+    'no App Store link until the app is actually approved'
+  );
+});
+
+test('the site never ships a copy of the appcast', () => {
+  assert.ok(
+    !existsSync(new URL('../dist/appcast.xml', import.meta.url)),
+    'Spec invariant 1: the appcast lives only in remokey-releases. A second copy ' +
+    'here would drift, and the stale one is the one shipped apps read.'
+  );
+});
