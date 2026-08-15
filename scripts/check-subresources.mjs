@@ -8,6 +8,7 @@
 import { parse } from 'node-html-parser';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 // rel values that cause a fetch. `canonical` and `alternate` do not.
 const FETCHING_REL = new Set([
@@ -18,9 +19,12 @@ const FETCHING_REL = new Set([
 function isExternal(url) {
   if (!url) return false;
   const t = url.trim();
+  // MUST precede the '/' check below: a protocol-relative URL starts with '/'
+  // too, and the early return made this clause unreachable dead code.
+  if (t.startsWith('//')) return true;
   if (t.startsWith('data:') || t.startsWith('#') || t.startsWith('/')) return false;
   if (t.startsWith('mailto:') || t.startsWith('tel:')) return false;
-  return /^https?:\/\//i.test(t) || t.startsWith('//');
+  return /^https?:\/\//i.test(t);
 }
 
 export function findViolations(html, file) {
@@ -29,22 +33,26 @@ export function findViolations(html, file) {
   const flag = (url, why) => { if (isExternal(url)) out.push({ file, url: url.trim(), why }); };
 
   root.querySelectorAll('script[src]').forEach((n) => flag(n.getAttribute('src'), 'script src'));
-  root.querySelectorAll('img[src], iframe[src], video[src], audio[src], embed[src], source[src]')
-      .forEach((n) => flag(n.getAttribute('src'), `${n.rawTagName} src`));
+  root.querySelectorAll('img[src], iframe[src], video[src], audio[src], embed[src], source[src], track[src], input[src], video[poster], use[href]')
+      .forEach((n) => flag(n.getAttribute('src') ?? n.getAttribute('poster') ?? n.getAttribute('href'), `${n.rawTagName} subresource`));
   root.querySelectorAll('object[data]').forEach((n) => flag(n.getAttribute('data'), 'object data'));
 
   root.querySelectorAll('link[href]').forEach((n) => {
-    const rel = (n.getAttribute('rel') || '').toLowerCase().trim();
-    if (FETCHING_REL.has(rel)) flag(n.getAttribute('href'), `link rel=${rel}`);
-  });
-
-  root.querySelectorAll('[srcset]').forEach((n) => {
-    for (const part of (n.getAttribute('srcset') || '').split(',')) {
-      flag(part.trim().split(/\s+/)[0], 'srcset');
+    const rels = (n.getAttribute('rel') || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if (rels.some((r) => FETCHING_REL.has(r))) {
+      flag(n.getAttribute('href'), `link rel=${rels.join(' ')}`);
     }
   });
 
+  root.querySelectorAll('[srcset], [imagesrcset]').forEach((n) => {
+    const raw = n.getAttribute('srcset') ?? n.getAttribute('imagesrcset') ?? '';
+    for (const part of raw.split(',')) flag(part.trim().split(/\s+/)[0], 'srcset');
+  });
+
   root.querySelectorAll('style').forEach((n) => flagCss(n.text, file, out));
+  // Inline style attributes: index.astro uses these heavily, so this is one
+  // url() away from being a live vector, not a theoretical one.
+  root.querySelectorAll('[style]').forEach((n) => flagCss(n.getAttribute('style') || '', file, out));
   return out;
 }
 
@@ -78,7 +86,10 @@ export function checkDir(dir) {
 }
 
 // CLI entry: `node scripts/check-subresources.mjs dist`
-if (import.meta.url === `file://${process.argv[1]}`) {
+// The naive `file://${process.argv[1]}` comparison failed OPEN on any path with a
+// space or non-ASCII character: the script exited 0 having checked nothing, and CI
+// reported a pass. pathToFileURL percent-encodes the same way import.meta.url does.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = process.argv[2] ?? 'dist';
   const v = checkDir(dir);
   if (v.length) {
