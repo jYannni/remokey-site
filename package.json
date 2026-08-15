@@ -10,7 +10,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "npm run build && node --test 'tests/**/*.test.mjs'"
+    "test": "npm run build && node --test 'tests/**/*.test.mjs' && node scripts/check-subresources.mjs dist"
   },
   "dependencies": {
     "astro": "^7.2.2"
