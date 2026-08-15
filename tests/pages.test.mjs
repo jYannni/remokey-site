@@ -46,3 +46,17 @@ test('privacy page carries no placeholder support address', () => {
   );
   assert.ok(!html.includes('example.com'));
 });
+
+test('support page is built and names the address', () => {
+  const html = read('support/index.html');
+  assert.ok(html.includes(SUPPORT_EMAIL));
+});
+
+test('support page routes users through the in-app reporter', () => {
+  const html = read('support/index.html');
+  assert.match(
+    html,
+    /report a problem/i,
+    'support page must point at the in-app reporter — an email address alone produces "it does not work" reports'
+  );
+});
