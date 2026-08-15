@@ -12,7 +12,10 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # false, not true: cancelling a deploy mid-flight can leave Pages partially
+  # updated. Queueing behind an in-flight deployment costs seconds; interrupting
+  # one costs a broken site. GitHub's own Pages starter workflow uses false.
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -65,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Wait for CDN propagation
