@@ -20,7 +20,7 @@ test('canonical link is not treated as a subresource', () => {
 
 test('external stylesheet and script are violations', () => {
   const v = dirty();
-  assert.equal(v.length, 6, `expected 6 violations, got ${v.length}: ${JSON.stringify(v)}`);
+  assert.equal(v.length, 9, `expected 9 violations, got ${v.length}: ${JSON.stringify(v)}`);
   assert.ok(v.some((x) => x.url.includes('fonts.googleapis.com')));
   assert.ok(v.some((x) => x.url.includes('cdn.example.com')));
 });
@@ -44,6 +44,21 @@ test('multi-valued rel containing stylesheet is a violation', () => {
 
 test('external video poster is a violation', () => {
   assert.ok(caught('cdn.poster.example'), 'video poster not caught');
+});
+
+// An external subresource must be caught even when a LOCAL attribute precedes it on
+// the same element — the `??` chain stopped at the first attribute present.
+
+test('an external poster is caught even when src is local', () => {
+  assert.ok(caught('cdn.localsrc.example'), 'local src shadowed the external poster');
+});
+
+test('an external imagesrcset is caught even when srcset is local', () => {
+  assert.ok(caught('cdn.imagesrcset.example'), 'local srcset shadowed the external imagesrcset');
+});
+
+test('legacy xlink:href on <use> is a violation', () => {
+  assert.ok(caught('cdn.xlink.example'), 'xlink:href not checked');
 });
 
 test('a local svg sprite reference is not a violation', () => {

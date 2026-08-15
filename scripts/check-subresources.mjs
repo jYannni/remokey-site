@@ -33,9 +33,24 @@ export function findViolations(html, file) {
   const flag = (url, why) => { if (isExternal(url)) out.push({ file, url: url.trim(), why }); };
 
   root.querySelectorAll('script[src]').forEach((n) => flag(n.getAttribute('src'), 'script src'));
-  root.querySelectorAll('img[src], iframe[src], video[src], audio[src], embed[src], source[src], track[src], input[src], video[poster], use[href]')
-      .forEach((n) => flag(n.getAttribute('src') ?? n.getAttribute('poster') ?? n.getAttribute('href'), `${n.rawTagName} subresource`));
-  root.querySelectorAll('object[data]').forEach((n) => flag(n.getAttribute('data'), 'object data'));
+  // Select by tag, then check EVERY candidate attribute. An earlier revision used
+  // `getAttribute('src') ?? getAttribute('poster') ?? getAttribute('href')`, which
+  // stops at the first attribute present — so <video src="/local.mp4"
+  // poster="https://cdn/evil.png"> was missed. That combination is the natural
+  // authoring mistake, not an exotic one.
+  //
+  // Selected by bare tag name rather than `use[xlink\\:href]`: attribute selectors
+  // containing a colon are a portability gamble across parsers, and checking the
+  // attribute directly sidesteps it. `a` is deliberately absent — anchors transmit
+  // nothing until clicked, and adding it here would block every App Store link.
+  const SUBRESOURCE_ATTRS = ['src', 'poster', 'href', 'xlink:href', 'data'];
+  root.querySelectorAll('img, iframe, video, audio, embed, source, track, input, use, object')
+      .forEach((n) => {
+        for (const attr of SUBRESOURCE_ATTRS) {
+          const v = n.getAttribute(attr);
+          if (v) flag(v, `${n.rawTagName} ${attr}`);
+        }
+      });
 
   root.querySelectorAll('link[href]').forEach((n) => {
     const rels = (n.getAttribute('rel') || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
@@ -45,8 +60,11 @@ export function findViolations(html, file) {
   });
 
   root.querySelectorAll('[srcset], [imagesrcset]').forEach((n) => {
-    const raw = n.getAttribute('srcset') ?? n.getAttribute('imagesrcset') ?? '';
-    for (const part of raw.split(',')) flag(part.trim().split(/\s+/)[0], 'srcset');
+    for (const attr of ['srcset', 'imagesrcset']) {
+      const raw = n.getAttribute(attr);
+      if (!raw) continue;
+      for (const part of raw.split(',')) flag(part.trim().split(/\s+/)[0], attr);
+    }
   });
 
   root.querySelectorAll('style').forEach((n) => flagCss(n.text, file, out));

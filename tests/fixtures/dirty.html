@@ -7,4 +7,9 @@
   <script src="//cdn.protocolrelative.example/a.js"></script>
   <div style="background:url(https://cdn.inlinestyle.example/bg.png)"></div>
   <video poster="https://cdn.poster.example/p.png"></video>
+  <!-- Local first attribute, external second: the `??` chain stopped at the first
+       attribute present, so these three were silently exempt. -->
+  <video src="/v.mp4" poster="https://cdn.localsrc.example/p.png"></video>
+  <img srcset="/a.png 1x" imagesrcset="https://cdn.imagesrcset.example/b.png 1x">
+  <svg><use xlink:href="https://cdn.xlink.example/i.svg#x"/></svg>
 </body></html>
