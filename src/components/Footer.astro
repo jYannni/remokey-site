@@ -1,0 +1,12 @@
+---
+import { SUPPORT_EMAIL, PRODUCT_NAME } from '../config.mjs';
+const year = new Date().getFullYear();
+---
+<footer class="wrap" style="border-top:1px solid var(--line);margin-top:4rem;padding-top:1.5rem;padding-bottom:3rem;color:var(--muted);font-size:.9rem">
+  <p>
+    <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+    &nbsp;·&nbsp;
+    <a href="/privacy/">Privacy</a>
+  </p>
+  <p>© {year} {PRODUCT_NAME}</p>
+</footer>

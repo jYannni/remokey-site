@@ -1,0 +1,24 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+const { title, description, frontmatter } = Astro.props;
+const pageTitle = title ?? frontmatter?.title ?? 'ReMoKey';
+const pageDesc = description ?? frontmatter?.description ?? '';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    {pageDesc && <meta name="description" content={pageDesc} />}
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+  </head>
+  <body>
+    <Header />
+    <main class="wrap"><slot /></main>
+    <Footer />
+  </body>
+</html>
