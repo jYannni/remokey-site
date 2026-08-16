@@ -215,6 +215,17 @@ updates.remokey.app (closing the "That address" antecedent), two stale
 engine comments were corrected, and the packet's static fallback dot now
 sits on the Bezier it claims to ride.
 
+### Round 3 — Codex, on the PR
+
+Codex's automatic review of PR #2 raised one P2: above the header's 21rem
+glyph-only breakpoint, the restored wordmark plus three links plus the new
+theme toggle overflowed the row, and the root's `overflow-x: clip` cut the
+toggle off silently instead of scrolling. Measured true — and wider than
+Codex's estimate (clipped from 337px to ~382px in a scrollbar-bearing
+window). Fixed by extending the glyph-only range to 24rem; the boundary was
+re-measured clean on both sides at 1px granularity. The re-review requested
+with `@codex review` found nothing further, and CI stayed green on the fix.
+
 ## 8. Deliberately not done
 
 - **No AI-generated video.** Round 1's reasoning holds (§2 of the previous
