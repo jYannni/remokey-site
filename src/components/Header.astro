@@ -186,9 +186,13 @@ const on = (p) => (path === p ? 'page' : undefined);
     .mark { font-size: 0.98rem; gap: 0.45rem; }
     .theme-toggle { width: 32px; height: 32px; }
   }
-  @media (max-width: 21rem) {
+  @media (max-width: 24rem) {
     /* Glyph only. The <a> keeps its aria-label, so the home link is still
-       named for assistive tech. */
+       named for assistive tech. 24rem, not 21: with the theme toggle in the
+       row, the full wordmark plus three links overflows a scrollbar-bearing
+       window below ~384px — and the root's overflow-x: clip silently cuts
+       the toggle off rather than scroll to it. Measured at the boundary on
+       both sides; originally caught by Codex on PR #2. */
     .mark span { display: none; }
   }
   .hdr__nav a:hover { color: var(--text); }
