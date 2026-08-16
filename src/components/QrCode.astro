@@ -43,22 +43,36 @@ for (let y = 0; y < n; y++) {
   }
 }
 const d = runs.join('');
+
+// The quiet zone, in modules. The QR spec requires FOUR clear modules on every
+// side, and it has to live inside the viewBox rather than being approximated by
+// CSS padding: at size=148 the wrapper's 12px padding worked out to about three
+// modules, and the wrapper's border-radius then ate the corners of even that.
+// Baking it in means the margin is exactly four modules at every rendered size,
+// and any padding the wrapper adds is extra quiet zone, which is harmless.
+const Q = 4;
+const box = n + Q * 2;
 ---
 <div class="qr" style={`--qr-size:${size}px`}>
-  <svg viewBox={`0 0 ${n} ${n}`} width={size} height={size} role="img"
+  <svg viewBox={`${-Q} ${-Q} ${box} ${box}`} width={size} height={size} role="img"
        aria-label={label} shape-rendering="crispEdges">
-    <path d={d} fill="currentColor" />
+    <rect x={-Q} y={-Q} width={box} height={box} fill="#fff" />
+    <path d={d} fill="#000" />
   </svg>
 </div>
 
 <style>
   .qr {
     width: var(--qr-size);
-    padding: 12px;
-    border-radius: 14px;
     /* Deliberately dark-on-white rather than inheriting the page: scanners are
        far more reliable with dark modules on a genuinely white field, and a
-       code nobody can scan is worse than no code. */
+       code nobody can scan is worse than no code.
+       
+       The white field and the four-module quiet zone are both drawn INSIDE the
+       svg now, so this padding is only the rounded card's inset — it can be
+       trimmed or removed without ever eating into the quiet zone. */
+    padding: 8px;
+    border-radius: 14px;
     background: #fff;
     color: #000;
   }

@@ -72,6 +72,21 @@ test('the component draws the matrix rather than scraping the library’s SVG', 
   );
 });
 
+test('the svg reserves a four-module quiet zone on every side', () => {
+  // The spec requires four clear modules all round. Approximating it with CSS
+  // padding gave about three at the rendered size, and the wrapper's
+  // border-radius then clipped the corners of that. Inside the viewBox it is
+  // exactly four at any size, and wrapper padding can only ever add more.
+  const src = readFileSync(new URL('../src/components/QrCode.astro', import.meta.url), 'utf8');
+  const Q = Number(src.match(/const Q = (\d+)/)?.[1]);
+  assert.ok(Q >= 4, `quiet zone is ${Q} modules, the spec requires 4`);
+  assert.match(src, /viewBox=\{`\$\{-Q\} \$\{-Q\} \$\{box\} \$\{box\}`\}/,
+    'the viewBox must be offset by the quiet zone on both axes');
+  assert.match(src, /const box = n \+ Q \* 2/, 'the box must grow by the quiet zone on both sides');
+  // And the field must be painted, or the "white" is whatever is behind the svg.
+  assert.match(src, /<rect x=\{-Q\} y=\{-Q\}[^>]*fill="#fff"/);
+});
+
 test('the top-left finder pattern is where a decoder expects it', () => {
   // A cheap structural sanity check that the matrix is a real QR symbol: the
   // 7x7 finder is solid on its border ring and hollow one ring in.
