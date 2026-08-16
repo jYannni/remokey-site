@@ -327,12 +327,17 @@ a:hover { color: var(--signal-lift); }
   transition-delay: var(--reveal-delay, 0ms);
   /* Failsafe. Setting .js in <head> and revealing from a separate module means
      two independent failure domains, only one of which gates the CSS: if the
-     module never executes, everything below the header stays invisible. This
-     animation costs nothing when the observer works (it lands on the same
-     values the transition already reached) and turns a blank page into a
-     two-second delay when it does not. */
+     module never executes, everything below the header stays invisible.
+     
+     It is DISARMED the moment the reveal engine confirms it is running, by the
+     rule below. Without that it does not merely sit there harmlessly — it fires
+     on every .reveal in the document after two seconds, and `forwards` leaves
+     the below-fold sections permanently visible, so their scroll reveals never
+     happen for anyone who reads the hero before scrolling. The failsafe has to
+     be a fallback, not a timer racing the engine. */
   animation: reveal-failsafe 1ms linear 2s forwards;
 }
+html.js-live .reveal { animation: none; }
 @keyframes reveal-failsafe { to { opacity: 1; transform: none; } }
 .reveal.is-in { opacity: 1; transform: none; }
 

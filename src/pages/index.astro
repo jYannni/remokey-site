@@ -575,6 +575,12 @@ const CAPS = [
      static document rather than a fast version of the same animation. */
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* Disarms the CSS failsafe in global.css. Called only once the mechanism that
+     reveals content is genuinely in place, so a module that throws on the way
+     there still gets the fallback. */
+  const armed = () => document.documentElement.classList.add('js-live');
+
   const revealAll = () =>
     document.querySelectorAll('.reveal').forEach((n) => n.classList.add('is-in'));
 
@@ -592,6 +598,7 @@ const CAPS = [
     stop();
     if (reduced.matches) {
       revealAll();
+      armed();
       return;
     }
     live = new AbortController();
@@ -610,6 +617,7 @@ const CAPS = [
     );
     document.querySelectorAll('.reveal').forEach((n) => revealIO.observe(n));
     signal.addEventListener('abort', () => revealIO.disconnect(), { once: true });
+    armed();
 
     /* 2 — Walkthrough. The step whose midpoint is nearest the middle of the
        viewport wins, which is stable while scrolling in either direction —

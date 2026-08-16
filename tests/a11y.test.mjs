@@ -128,9 +128,29 @@ test('content still appears if the reveal script never executes', () => {
   // `.js` is set inline in <head> and arms `opacity: 0`; a separate module
   // un-arms it. Those are two failure domains and only one gates the CSS, so a
   // module that 404s, is blocked, or throws leaves a blank page below the
-  // header. The failsafe animation costs nothing when the observer works.
+  // header.
   assert.match(css, /\.reveal\s*\{[\s\S]*?animation:\s*reveal-failsafe/);
   assert.match(css, /@keyframes reveal-failsafe\s*\{[^}]*opacity:\s*1/);
+});
+
+test('the failsafe is disarmed once the reveal engine is running', () => {
+  // Otherwise it is not a fallback, it is a timer racing the engine: it fires
+  // on EVERY .reveal after two seconds — including below-fold sections that
+  // have never intersected — and `forwards` makes them permanently visible, so
+  // anyone who reads the hero for two seconds before scrolling gets no scroll
+  // reveals at all. Which is most people.
+  assert.match(
+    css, /html\.js-live\s+\.reveal\s*\{[^}]*animation:\s*none/,
+    'global.css must cancel the failsafe once html.js-live is set',
+  );
+  assert.match(index, /classList\.add\('js-live'\)/, 'the engine must claim js-live');
+  // And it must claim it only after the reveal mechanism is actually in place,
+  // so a module that throws on the way there still gets the fallback.
+  const engine = index.slice(index.indexOf('function start()'));
+  const observeAt = engine.indexOf('revealIO.observe');
+  const armAt = engine.indexOf('armed();', observeAt);
+  assert.ok(observeAt > 0 && armAt > observeAt,
+    'armed() must be called after the observer is attached, not before');
 });
 
 test('the scroll engine can be torn down, not only started', () => {
