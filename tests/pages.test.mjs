@@ -78,21 +78,57 @@ test('privacy page body names the address, not just the footer', () => {
   assert.ok(mainOf('privacy/index.html').includes(SUPPORT_EMAIL));
 });
 
-test('landing page is built with the coming-soon state', () => {
-  const html = read('index.html');
-  assert.match(html, /coming soon/i);
+// REPLACED 2026-08-16, deliberately. Two tests used to live here:
+//
+//   'landing page is built with the coming-soon state'  — asserted /coming soon/i
+//   'landing page offers no download links…'            — asserted no .dmg and
+//                                                          no apps.apple.com
+//
+// The second one's reasoning was right — "the Mac host is useless without the
+// iPhone app" — but the assertion was a proxy for it, and a proxy that had to
+// be deleted the first time a download legitimately existed. Deleting it would
+// have left the actual worry unguarded forever.
+//
+// So the worry itself is now the test, in tests/appstore.test.mjs: *any page
+// offering the Mac download must state the iPhone app's status on that same
+// page*. That holds today, and it keeps holding after approval, when the
+// wording flips from "in review" to a live link. The DMG URL's freshness is
+// covered separately in tests/download.test.mjs.
+//
+// The "coming soon" pill is gone with the redesign; what replaced it is the
+// honest, specific pending notice the two tests below check for.
+
+test('landing page leads with what the product is', () => {
+  const main = mainOf('index.html');
+  assert.match(main, /trackpad/i, 'the landing page must say what the app actually is');
+  assert.match(
+    main, /own Wi-Fi/i,
+    'the LAN-only story is the differentiator and belongs above the fold',
+  );
 });
 
-test('landing page offers no download links before the iPhone app ships', () => {
-  const html = read('index.html');
-  assert.ok(
-    !/\.dmg/i.test(html),
-    'no DMG link at launch — the Mac host is useless without the iPhone app'
+test('landing page does not claim screen mirroring', () => {
+  // ReMoKey sends input, not video. This is the single most likely wrong
+  // expectation for someone skimming, and the page explicitly disclaims it.
+  const main = mainOf('index.html');
+  assert.match(
+    main, /no screen mirroring/i,
+    'the page must say it is not screen mirroring — people assume otherwise, ' +
+    'and the disappointment arrives after they have installed two apps',
   );
-  assert.ok(
-    !/apps\.apple\.com/i.test(html),
-    'no App Store link until the app is actually approved'
-  );
+});
+
+test('landing page names no capability the app does not have', () => {
+  // Each of these was checked against the app source and is NOT implemented.
+  // Brightness has zero occurrences repo-wide; the magnify injector exists but
+  // no view ever calls it, so there is no pinch-to-zoom to sell.
+  const main = mainOf('index.html').replace(/<[^>]+>/g, ' ');
+  for (const claim of [/brightness/i, /pinch/i, /mirror(ing)? your screen/i]) {
+    assert.ok(
+      !claim.test(main),
+      `landing page mentions ${claim} — the app does not do that`,
+    );
+  }
 });
 
 test('the site never ships a copy of the appcast', () => {

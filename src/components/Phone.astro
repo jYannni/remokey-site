@@ -1,0 +1,274 @@
+---
+/**
+ * An iPhone rendering the real ReMoKey UI.
+ *
+ * Drawn entirely in SVG on a 390x844pt viewBox — the logical size of an
+ * iPhone 15 Pro — so every constant lifted from the app source lands at its
+ * true proportion with no conversion. Numbers below are cited to the file they
+ * came from; if the app changes, these are the lines to re-check.
+ *
+ * Shown in dark mode. The app has no explicit light/dark branch anywhere —
+ * every colour is semantic (secondarySystemBackground, tertiarySystemFill,
+ * Color.primary) — so the dark rendering is exactly as real as the light one,
+ * and it is the one that belongs on this site.
+ *
+ * screen: 'control' | 'connect' | 'pair'
+ */
+const { screen = 'control', label, klass = '' } = Astro.props;
+import Glyph from './Glyph.astro';
+
+// A per-instance suffix for the <defs> ids. The landing page renders the
+// `control` screen twice — once in the hero, once as a walkthrough layer — and
+// two elements sharing `id="scr-control"` means every `url(#scr-control)` in
+// the document resolves to the FIRST one, so the second phone gets clipped by
+// a path positioned for the first.
+globalThis.__rkPhoneSeq = (globalThis.__rkPhoneSeq ?? 0) + 1;
+const uid = `ph${globalThis.__rkPhoneSeq}`;
+
+// ---------------------------------------------------------------------------
+// Geometry, from Phone/Sources/
+// ---------------------------------------------------------------------------
+const W = 390, H = 844;
+const M = 16;                     // ContentView.swift:590 — portrait margin
+const PAD_X = M, PAD_W = W - M * 2;          // 358
+const PAD_Y = 93, PAD_H = 603;               // derived; pad takes ~71% of height
+const PAD_R = 16;                            // PadShape.swift — cornerRadius 16
+
+// PadEdges.swift. Depth is the `.subtle` default of 5pt; heights are fixed at
+// 245 (left) / 163 (right) and anchored to the phone's physical buttons, which
+// is why they are asymmetric and why neither is centred.
+const DENT_D = 5, SLACK = 0.34;              // PadShape.slack
+const L_H = 245, L_C = 166;                  // left dent: height, centre from pad top
+const R_H = 163, R_C = 177;                  // right dent
+
+const padPath = (() => {
+  const w = PAD_W, h = PAD_H, r = PAD_R, d = DENT_D;
+  const lo = (L_H / 2) * SLACK, ro = (R_H / 2) * SLACK;
+  const l1 = L_C - L_H / 2, l2 = L_C + L_H / 2;
+  const r1 = R_C - R_H / 2, r2 = R_C + R_H / 2;
+  return [
+    `M ${r} 0`, `L ${w - r} 0`, `A ${r} ${r} 0 0 1 ${w} ${r}`,
+    `L ${w} ${r1}`,
+    // Right dent: two mirrored cubics whose control points stay parallel to the
+    // edge, so the curve leaves and rejoins vertically with no visible crease.
+    `C ${w} ${r1 + ro} ${w - d} ${R_C - ro} ${w - d} ${R_C}`,
+    `C ${w - d} ${R_C + ro} ${w} ${r2 - ro} ${w} ${r2}`,
+    `L ${w} ${h - r}`, `A ${r} ${r} 0 0 1 ${w - r} ${h}`,
+    `L ${r} ${h}`, `A ${r} ${r} 0 0 1 0 ${h - r}`,
+    `L 0 ${l2}`,
+    `C 0 ${l2 - lo} ${d} ${L_C + lo} ${d} ${L_C}`,
+    `C ${d} ${L_C - lo} 0 ${l1 + lo} 0 ${l1}`,
+    `L 0 ${r}`, `A ${r} ${r} 0 0 1 ${r} 0`, 'Z',
+  ].join(' ');
+})();
+
+// DockLayout.swift — button 69pt, bottomInset 12. With the default four items
+// the interlock path (count == 3) does not fire, so centres are even.
+const DOCK_R = 34.5;
+const DOCK_CY = PAD_Y + PAD_H - DOCK_R - 12;
+const DOCK = [0.125, 0.375, 0.625, 0.875].map((f, i) => ({
+  cx: PAD_X + f * PAD_W,
+  // PadDock.swift:61 — dpad, playpause.fill, rectangle.on.rectangle, keyboard
+  icon: ['dpad', 'playpause', 'desktops', 'keyboard'][i],
+  title: ['Arrow keys', 'Media & seek', 'Desktops', 'Keyboard'][i],
+}));
+
+const CLICK_Y = 708, ROW_H = 44, MOD_Y = 776;
+const clickW = (PAD_W - 8) / 2;
+const modW = (PAD_W - 8 * 3) / 4;
+
+// iOS semantic colours, dark appearance
+const C = {
+  screen: '#000000',
+  pad: '#1c1c1e',                       // secondarySystemBackground
+  fill: 'rgba(118,118,128,0.24)',       // tertiarySystemFill
+  text: '#ffffff',
+  dim: 'rgba(235,235,245,0.6)',
+  faint: 'rgba(235,235,245,0.3)',
+  accent: '#007aff',                    // AccentTint .system default
+};
+
+const alt = label ?? {
+  control: 'An iPhone showing the ReMoKey trackpad, its four dock buttons and the modifier keys',
+  connect: 'An iPhone searching for Macs on the local Wi-Fi network',
+  pair: 'An iPhone showing a four-digit pairing code to compare against the Mac',
+}[screen];
+---
+
+<div class={`phone ${klass}`}>
+  <svg viewBox="-13 -13 416 870" role="img" aria-label={alt} class="phone__svg">
+    <defs>
+      <clipPath id={`scr-${uid}`}>
+        <rect x="0" y="0" width={W} height={H} rx="47" />
+      </clipPath>
+      <linearGradient id={`rail-${uid}`} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#5c6472" />
+        <stop offset=".35" stop-color="#20242c" />
+        <stop offset=".62" stop-color="#767f8e" />
+        <stop offset="1" stop-color="#1a1d24" />
+      </linearGradient>
+    </defs>
+
+    <!-- Titanium rail and bezel -->
+    <rect x="-13" y="-13" width={W + 26} height={H + 26} rx="60" fill={`url(#rail-${uid})`} />
+    <rect x="-6.5" y="-6.5" width={W + 13} height={H + 13} rx="54" fill="#05060a" />
+
+    <g clip-path={`url(#scr-${uid})`}>
+      <rect x="0" y="0" width={W} height={H} fill={C.screen} />
+
+      { screen === 'control' && (
+        <g>
+          {/* Status row — ContentView.swift:928. Flanks are equal fixed widths
+              so the Mac's name stays optically centred. */}
+          <g transform="translate(0 51)">
+            <g transform="translate(20 3)" color={C.dim}><Glyph name="lock" size={24} /></g>
+            <g transform="translate(133 6)" color={C.text}><Glyph name="mac" size={18} /></g>
+            <text x="157" y="20" fill={C.text} font-size="15" font-weight="600"
+                  font-family="var(--body)" letter-spacing="-.2">Yanko’s Mac</text>
+            <g transform="translate(249 10)" color={C.dim}><Glyph name="chevron-down" size={11} /></g>
+            <g transform="translate(346 3)" color={C.dim}><Glyph name="gear" size={24} /></g>
+          </g>
+
+          {/* The pad. Blank by default: pointer mode draws no dividers and no
+              glyphs, and PadShape carries no stroke, border or shadow —
+              "the pad is meant to look like nothing". */}
+          <g transform={`translate(${PAD_X} ${PAD_Y})`}>
+            <path d={padPath} fill={C.pad} />
+          </g>
+
+          {/* Expand button, top-trailing of the pad, 44pt target */}
+          <g transform={`translate(${PAD_X + PAD_W - 44} ${PAD_Y + 10})`}>
+            <circle cx="17" cy="17" r="17" fill="rgba(120,125,140,0.22)" />
+            <g transform="translate(7 7)" color={C.dim}><Glyph name="expand" size={20} /></g>
+          </g>
+
+          {/* Dock — floats over the pad, consumes no layout height */}
+          {DOCK.map((d, i) => (
+            <g>
+              <circle cx={d.cx} cy={DOCK_CY} r={DOCK_R}
+                      fill={i === 0 ? C.accent : 'rgba(120,125,140,0.2)'} />
+              <g transform={`translate(${d.cx - 11} ${DOCK_CY - 11})`}
+                 color={i === 0 ? '#ffffff' : C.text}>
+                <Glyph name={d.icon} size={22} />
+              </g>
+            </g>
+          ))}
+
+          {/* Click row — settings.showClickButtons, default true */}
+          {['Left click', 'Right click'].map((t, i) => (
+            <g>
+              <rect x={PAD_X + i * (clickW + 8)} y={CLICK_Y} width={clickW} height={ROW_H}
+                    rx="10" fill={C.fill} />
+              <text x={PAD_X + i * (clickW + 8) + clickW / 2} y={CLICK_Y + 27}
+                    fill={C.text} font-size="15" font-family="var(--body)"
+                    text-anchor="middle">{t}</text>
+            </g>
+          ))}
+
+          {/* Modifier bar — ModifierBar.swift:49. Typographic glyphs, not
+              symbols. ⌘ is drawn armed: grey box, accent glyph. */}
+          {['⌘', '⌃', '⌥', '⇧'].map((k, i) => (
+            <g>
+              <rect x={PAD_X + i * (modW + 8)} y={MOD_Y} width={modW} height={ROW_H}
+                    rx="10" fill={C.fill} />
+              <text x={PAD_X + i * (modW + 8) + modW / 2} y={MOD_Y + 29}
+                    fill={i === 0 ? C.accent : C.text} font-size="19" font-weight="600"
+                    font-family="var(--body)" text-anchor="middle">{k}</text>
+            </g>
+          ))}
+        </g>
+      )}
+
+      { screen === 'connect' && (
+        <g>
+          <g transform="translate(24 58)">
+            <circle cx="5" cy="5" r="5" fill="#ff9f0a" />
+            <text x="18" y="10" fill={C.text} font-size="15" font-family="var(--body)">Discovering…</text>
+          </g>
+
+          <g transform="translate(171 214)" color={C.dim}><Glyph name="mac" size={48} /></g>
+          <text x={W / 2} y="308" fill={C.text} font-size="20" font-weight="600"
+                font-family="var(--body)" text-anchor="middle" letter-spacing="-.3">Connect to your Mac</text>
+          <text x={W / 2} y="338" fill={C.dim} font-size="15"
+                font-family="var(--body)" text-anchor="middle">Looking for Macs on your Wi-Fi…</text>
+
+          <text x="24" y="416" fill={C.dim} font-size="13" font-weight="600"
+                font-family="var(--body)">Your Macs</text>
+
+          {/* Saved-Mac row — 12pt radius card on secondarySystemBackground */}
+          <g transform="translate(16 432)">
+            <rect x="0" y="0" width={PAD_W} height="72" rx="12" fill={C.pad} />
+            <g transform="translate(16 20)" color={C.text}><Glyph name="mac" size={24} /></g>
+            <text x="52" y="32" fill={C.text} font-size="16" font-family="var(--body)"
+                  font-weight="500">Yanko’s Mac</text>
+            <text x="52" y="52" fill={C.dim} font-size="13" font-family="var(--body)">Found on your network</text>
+            <g transform={`translate(${PAD_W - 34} 26)`} color={C.faint}><Glyph name="chevron-right" size={18} /></g>
+          </g>
+
+          <g transform="translate(16 516)">
+            <rect x="0" y="0" width={PAD_W} height="60" rx="12" fill={C.pad} />
+            <g transform="translate(16 18)" color={C.text}><Glyph name="mac" size={24} /></g>
+            <text x="52" y="36" fill={C.text} font-size="16" font-family="var(--body)"
+                  font-weight="500">Studio</text>
+            <g transform="translate(232 22)">
+              <rect x="0" y="0" width="82" height="20" rx="10" fill={C.fill} />
+              <text x="41" y="14" fill={C.dim} font-size="11" font-weight="600"
+                    font-family="var(--body)" text-anchor="middle">Not paired</text>
+            </g>
+            <g transform={`translate(${PAD_W - 34} 20)`} color={C.faint}><Glyph name="chevron-right" size={18} /></g>
+          </g>
+
+          <line x1="16" y1="616" x2={W - 16} y2="616" stroke="rgba(235,235,245,0.14)" />
+          <text x="24" y="646" fill={C.dim} font-size="13" font-weight="600"
+                font-family="var(--body)">Advanced</text>
+          <g transform="translate(350 634)" color={C.faint}><Glyph name="chevron-right" size={14} /></g>
+        </g>
+      )}
+
+      { screen === 'pair' && (
+        <g>
+          <text x={W / 2} y="176" fill={C.text} font-size="17" font-weight="600"
+                font-family="var(--body)" text-anchor="middle">Pair with Yanko’s Mac</text>
+
+          <text x={W / 2} y="252" fill={C.dim} font-size="15" font-family="var(--body)"
+                text-anchor="middle">Check this matches the code on the</text>
+          <text x={W / 2} y="274" fill={C.dim} font-size="15" font-family="var(--body)"
+                text-anchor="middle">Mac, then confirm there.</text>
+
+          {/* Four digit cells — PairingView.swift:142. 54x66, radius 10,
+              34pt semibold rounded, monospaced digits. */}
+          {['4', '9', '1', '7'].map((d, i) => (
+            <g transform={`translate(${W / 2 - 117 + i * 64} 320)`}>
+              <rect x="0" y="0" width="54" height="66" rx="10" fill="rgba(235,235,245,0.12)" />
+              <text x="27" y="47" fill={C.text} font-size="34" font-weight="600"
+                    font-family="var(--body)" text-anchor="middle"
+                    style="font-variant-numeric:tabular-nums">{d}</text>
+            </g>
+          ))}
+
+          <text x={W / 2} y="446" fill={C.dim} font-size="13" font-family="var(--body)"
+                text-anchor="middle">If the Mac shows a different code, cancel —</text>
+          <text x={W / 2} y="466" fill={C.dim} font-size="13" font-family="var(--body)"
+                text-anchor="middle">something is intercepting the connection.</text>
+        </g>
+      )}
+
+      {/* Home indicator */}
+      <rect x={W / 2 - 70} y="826" width="140" height="5" rx="2.5" fill="rgba(255,255,255,0.35)" />
+    </g>
+
+    {/* Dynamic Island, drawn over the screen */}
+    <rect x={W / 2 - 62} y="11" width="124" height="36" rx="18" fill="#000" />
+    <circle cx={W / 2 + 40} cy="29" r="6.2" fill="#0b0d14" />
+  </svg>
+</div>
+
+<style>
+  .phone {
+    width: 100%;
+    filter:
+      drop-shadow(0 2px 4px rgb(0 0 0 / 0.5))
+      drop-shadow(0 30px 60px rgb(0 0 0 / 0.55));
+  }
+  .phone__svg { width: 100%; height: auto; }
+</style>

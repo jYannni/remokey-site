@@ -71,7 +71,7 @@ Beyond that:
 - Device and computer names are stored as a one-way digest, not as names
 - Network addresses are reduced to a category — "local network", "VPN", and so on
   — never the address itself
-- The pairing PIN, pairing credentials and the contents of anything you type are
+- The pairing code, pairing credentials and the contents of anything you type are
   never recorded
 
 The log stays on your device unless you send a report.

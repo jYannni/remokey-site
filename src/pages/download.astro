@@ -1,0 +1,280 @@
+---
+import Base from '../layouts/Base.astro';
+import Glyph from '../components/Glyph.astro';
+import QrCode from '../components/QrCode.astro';
+import {
+  APP_STORE_URL, TESTFLIGHT_URL, dmgUrl, MAC_VERSION, MAC_MIN_OS, IOS_MIN_OS,
+  RELEASES_REPO, SUPPORT_EMAIL,
+} from '../config.mjs';
+
+const iphoneReady = APP_STORE_URL !== null;
+const beta = TESTFLIGHT_URL !== null;
+const qrTarget = APP_STORE_URL ?? TESTFLIGHT_URL;
+
+const STEPS = [
+  'Open the DMG and drag ReMoKey to Applications.',
+  'Launch it. Setup opens on first run.',
+  'Grant Accessibility when asked — without it the Mac receives your input but ignores it.',
+  'Choose “Pair new device…” from the menu-bar icon, then open ReMoKey on your iPhone.',
+];
+---
+<Base
+  wide
+  title="Download ReMoKey"
+  description="Get ReMoKey for Mac, and find out where the iPhone app is up to."
+>
+  <section class="dl">
+    <div class="wrap dl__head">
+      <p class="label">Download</p>
+      <h1 class="t-xl">Two apps.<br />You need both.</h1>
+      <p class="lede">
+        ReMoKey is a pair: a menu-bar app on the Mac, and the app on your iPhone
+        that drives it. Neither does anything by itself.
+      </p>
+    </div>
+
+    <div class="wrap dl__grid">
+      <!-- ── Mac ── -->
+      <article class="pane">
+        <header class="pane__top">
+          <span class="pane__icon" aria-hidden="true"><Glyph name="mac" size={24} /></span>
+          <div>
+            <h2 class="pane__t">ReMoKey for Mac</h2>
+            <p class="pane__meta">Version {MAC_VERSION} · macOS {MAC_MIN_OS} or later</p>
+          </div>
+          <span class="chip chip--ok">Available</span>
+        </header>
+
+        <a class="btn btn--primary pane__btn" href={dmgUrl()} data-mac-download>
+          <Glyph name="download" size={18} />
+          <span class="btn__stack">
+            <span>Download the DMG</span>
+            <span class="btn__sub">Apple silicon and Intel</span>
+          </span>
+        </a>
+
+        <ul class="facts">
+          <li>
+            <Glyph name="shield" size={16} />
+            <span>Signed with a Developer ID, notarised by Apple and stapled — it opens without a Gatekeeper warning.</span>
+          </li>
+          <li>
+            <Glyph name="bolt" size={16} />
+            <span>Updates itself. It checks once a day and keeps your Accessibility grant across updates.</span>
+          </li>
+          <li>
+            <Glyph name="check" size={16} />
+            <span>Lives in the menu bar. No Dock icon, no window in your way.</span>
+          </li>
+        </ul>
+
+        <details class="steps">
+          <summary>After it downloads</summary>
+          <ol>{STEPS.map((s) => <li>{s}</li>)}</ol>
+          <p class="steps__note">
+            Older versions and release notes are on the
+            <a href={`${RELEASES_REPO}/releases`}>releases page</a>.
+          </p>
+        </details>
+      </article>
+
+      <!-- ── iPhone ── -->
+      <article class="pane">
+        <header class="pane__top">
+          <span class="pane__icon" aria-hidden="true"><Glyph name="phone" size={24} /></span>
+          <div>
+            <h2 class="pane__t">ReMoKey for iPhone</h2>
+            <p class="pane__meta">iOS {IOS_MIN_OS} or later</p>
+          </div>
+          <span class:list={['chip', iphoneReady ? 'chip--ok' : beta ? 'chip--beta' : 'chip--wait']}>
+            {iphoneReady ? 'Available' : beta ? 'Beta' : 'In review'}
+          </span>
+        </header>
+
+        { iphoneReady && (
+          <a class="btn btn--primary pane__btn" href={APP_STORE_URL}>
+            <Glyph name="phone" size={18} />
+            <span class="btn__stack">
+              <span>Get it on the App Store</span>
+              <span class="btn__sub">Free</span>
+            </span>
+          </a>
+        )}
+
+        { !iphoneReady && beta && (
+          <a class="btn pane__btn" href={TESTFLIGHT_URL}>
+            <Glyph name="phone" size={18} />
+            <span class="btn__stack">
+              <span>Join the beta</span>
+              <span class="btn__sub">Through TestFlight</span>
+            </span>
+          </a>
+        )}
+
+        { qrTarget && (
+          <div class="qrbox">
+            <QrCode value={qrTarget} size={140}
+                    label={`QR code linking to ${iphoneReady ? 'ReMoKey on the App Store' : 'the ReMoKey TestFlight beta'}`} />
+            <p class="qrbox__t">
+              <strong>Point your iPhone at this.</strong>
+              You are most likely reading this on the Mac you want to control,
+              with the phone already in your hand.
+            </p>
+          </div>
+        )}
+
+        {/* The honest state, and the reason this pane is never empty. */}
+        { !qrTarget && (
+          <div class="pending" data-iphone-status>
+            <p><strong>Not on the App Store yet.</strong> It is with Apple for review.</p>
+            <p>
+              There is no public beta link either — TestFlight is currently
+              limited to internal testing, so there is nothing here that would
+              actually install for you. Rather than park a button that fails,
+              this space stays empty until it works.
+            </p>
+            <p>
+              When it goes live, a download button and a scannable code appear
+              here, and <a href="/">the front page</a> changes with it.
+            </p>
+            <p class="pending__mail">
+              Want a nudge when it ships? Mail
+              <a href={`mailto:${SUPPORT_EMAIL}?subject=Tell%20me%20when%20ReMoKey%20is%20on%20the%20App%20Store`}>{SUPPORT_EMAIL}</a>.
+            </p>
+          </div>
+        )}
+      </article>
+    </div>
+
+    <div class="wrap">
+      <p class="dl__foot">
+        Trouble getting set up? <a href="/support/">Support</a> covers the
+        Accessibility grant, devices that don’t appear, and how to report a bug
+        from inside the app.
+      </p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .dl { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) 0; }
+  .dl__head { max-width: 40rem; margin-bottom: clamp(2.5rem, 1.5rem + 4vw, 4rem); }
+  .dl__head h1 { margin-bottom: 1.25rem; }
+
+  .dl__grid {
+    display: grid;
+    gap: 1.25rem;
+    align-items: start;
+  }
+  @media (min-width: 56rem) {
+    .dl__grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .pane {
+    background: var(--graphite);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: clamp(1.4rem, 1rem + 1.4vw, 2rem);
+    display: grid;
+    gap: 1.35rem;
+    align-content: start;
+  }
+
+  .pane__top {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .pane__icon {
+    display: grid;
+    place-items: center;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--signal-haze);
+    color: var(--signal);
+  }
+  .pane__t { font-size: var(--t-md); letter-spacing: -0.02em; margin: 0; }
+  .pane__meta {
+    font-family: var(--mono);
+    font-size: var(--t-xs);
+    color: var(--text-mute);
+    margin: 0.2rem 0 0;
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .chip--ok   { color: var(--good); border-color: rgb(53 199 89 / 0.35); background: rgb(53 199 89 / 0.1); }
+  .chip--beta { color: var(--signal); border-color: var(--signal-edge); background: var(--signal-haze); }
+  .chip--wait { color: var(--text-mute); border-color: var(--line-lit); }
+
+  .pane__btn { justify-self: start; }
+
+  .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.85rem; }
+  .facts li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.65rem;
+    align-items: start;
+    color: var(--text-dim);
+    font-size: var(--t-sm);
+    line-height: 1.55;
+  }
+  .facts :global(svg) { color: var(--text-mute); margin-top: 0.22em; }
+
+  .steps { border-top: 1px solid var(--line); padding-top: 1.1rem; }
+  .steps summary {
+    cursor: pointer;
+    font-size: var(--t-sm);
+    font-weight: 600;
+    color: var(--text-dim);
+    list-style-position: outside;
+    /* A real control, so it gets a real target height rather than the 22px
+       its single line of text produced. */
+    padding-block: 0.72rem;
+  }
+  .steps summary:hover { color: var(--text); }
+  .steps ol { margin: 1rem 0 0; padding-left: 1.25rem; display: grid; gap: 0.5rem; }
+  .steps li { color: var(--text-dim); font-size: var(--t-sm); }
+  .steps li::marker { color: var(--text-mute); font-variant-numeric: tabular-nums; }
+  .steps__note { margin: 1rem 0 0; font-size: var(--t-sm); color: var(--text-mute); }
+
+  .qrbox {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.1rem;
+    align-items: center;
+    padding-top: 0.25rem;
+  }
+  .qrbox__t { margin: 0; font-size: var(--t-sm); color: var(--text-mute); line-height: 1.55; }
+  .qrbox__t strong { display: block; color: var(--text-dim); }
+  /* A QR you cannot scan from the device showing it is decoration. */
+  @media (max-width: 40rem) { .qrbox { display: none; } }
+
+  .pending {
+    border: 1px dashed var(--line-lit);
+    border-radius: var(--r-md);
+    padding: 1.1rem 1.25rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .pending p { margin: 0; font-size: var(--t-sm); color: var(--text-mute); line-height: 1.6; }
+  .pending strong { color: var(--text-dim); }
+  .pending__mail { border-top: 1px solid var(--line); padding-top: 0.75rem; }
+
+  .dl__foot {
+    margin: clamp(2.5rem, 1.5rem + 3vw, 4rem) 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    color: var(--text-mute);
+    font-size: var(--t-sm);
+  }
+</style>

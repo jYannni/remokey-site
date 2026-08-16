@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runChecks } from '../scripts/smoke.mjs';
+import { MAC_VERSION, dmgUrl } from '../src/config.mjs';
 
 const ok = (body = '', status = 200, location = null) => ({
   status,
@@ -14,7 +15,9 @@ const healthy = async (url) => {
   if (url.startsWith('http://')) return ok('', 301, url.replace('http://', 'https://'));
   if (url.includes('www.')) return ok('', 301, 'https://remokey.app/');
   if (url.includes('support')) return ok('mail support@remokey.app');
-  if (url.includes('appcast')) return ok('<rss>same</rss>');
+  if (url.includes('appcast'))
+    return ok(`<rss><sparkle:shortVersionString>${MAC_VERSION}</sparkle:shortVersionString></rss>`);
+  if (url.endsWith('.dmg')) return ok('');
   return ok('<html></html>');
 };
 
@@ -67,4 +70,55 @@ test('fails when www does not redirect to the apex', async () => {
     url.includes('www.') ? ok('<html></html>', 200) : healthy(url);
   const { failures } = await runChecks({ fetchImpl });
   assert.ok(failures.some((f) => /www/i.test(f)));
+});
+
+// --- Release drift ---------------------------------------------------------
+//
+// These two are the reason the download page can be trusted months after it was
+// written. Nobody re-reads a marketing page after shipping, so the only thing
+// standing between a release and a stale Download button is this check.
+
+test('fails when the site offers an older version than the appcast publishes', async () => {
+  const fetchImpl = async (url) =>
+    url.includes('appcast')
+      ? ok('<rss><sparkle:shortVersionString>9.9</sparkle:shortVersionString></rss>')
+      : healthy(url);
+  const { failures } = await runChecks({ fetchImpl });
+  assert.ok(
+    failures.some((f) => /MAC_VERSION/.test(f) && f.includes('9.9')),
+    `expected a failure naming MAC_VERSION and the published version, got: ${JSON.stringify(failures)}`
+  );
+});
+
+test('fails when the DMG the Download button points at does not exist', async () => {
+  const fetchImpl = async (url) => (url.endsWith('.dmg') ? ok('', 404) : healthy(url));
+  const { failures } = await runChecks({ fetchImpl });
+  assert.ok(
+    failures.some((f) => /\.dmg/.test(f) && /404/.test(f)),
+    `expected a failure naming the DMG and 404, got: ${JSON.stringify(failures)}`
+  );
+});
+
+test('the download page is one of the pages checked for a 200', async () => {
+  const fetchImpl = async (url) =>
+    url === 'https://remokey.app/download/' ? ok('', 404) : healthy(url);
+  const { failures } = await runChecks({ fetchImpl });
+  assert.ok(
+    failures.some((f) => /download/.test(f) && /404/.test(f)),
+    `expected /download/ to be checked, got: ${JSON.stringify(failures)}`
+  );
+});
+
+test('a mismatched appcast still surfaces alongside a version mismatch', async () => {
+  // Both checks read the same feed body. An earlier revision consumed the
+  // Response twice, which threw and silently dropped the second check.
+  const fetchImpl = async (url) =>
+    url.includes('raw.githubusercontent')
+      ? ok('<rss>different</rss>')
+      : url.includes('appcast')
+        ? ok('<rss><sparkle:shortVersionString>9.9</sparkle:shortVersionString></rss>')
+        : healthy(url);
+  const { failures } = await runChecks({ fetchImpl });
+  assert.ok(failures.some((f) => /appcast/i.test(f) && /disagree/.test(f)), 'appcast mismatch missing');
+  assert.ok(failures.some((f) => /MAC_VERSION/.test(f)), 'version mismatch missing');
 });

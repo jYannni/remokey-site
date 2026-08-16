@@ -1,0 +1,52 @@
+---
+/**
+ * A QR code, encoded at BUILD time into inline SVG.
+ *
+ * Not an <img>, not a hosted QR service, and no runtime library. A third-party
+ * QR endpoint would breach the site's no-external-subresource rule and would
+ * also hand a stranger's server the fact that this visitor is looking at our
+ * download page. Inline SVG has neither problem, costs one request fewer, and
+ * stays crisp at any size.
+ *
+ * `qrcode` is a devDependency: it runs during `astro build` and nothing it
+ * produces reaches the browser except the path data below.
+ */
+import QRCode from 'qrcode';
+
+const { value, size = 148, label } = Astro.props;
+
+// Error-correction level M tolerates ~15% damage, which is the right level for
+// a code rendered on a screen and scanned from a phone a foot away. H would
+// make the modules denser for no benefit here.
+const svg = await QRCode.toString(value, {
+  type: 'svg',
+  errorCorrectionLevel: 'M',
+  margin: 0,
+});
+
+// qrcode emits a full <svg> document with its own width/height and a white
+// background rect. Take only the path data so the code inherits our colours
+// and scales with the layout.
+const paths = [...svg.matchAll(/<path[^>]*\sd="([^"]+)"/g)].map((m) => m[1]);
+const dark = paths[paths.length - 1];
+const viewBox = svg.match(/viewBox="([^"]+)"/)?.[1] ?? '0 0 33 33';
+---
+<div class="qr" style={`--qr-size:${size}px`}>
+  <svg viewBox={viewBox} width={size} height={size} role="img" aria-label={label}
+       shape-rendering="crispEdges">
+    <path d={dark} fill="currentColor" />
+  </svg>
+</div>
+
+<style>
+  .qr {
+    width: var(--qr-size);
+    padding: 12px;
+    border-radius: 14px;
+    /* Deliberately light-on-dark-page: scanners are far more reliable with
+       dark modules on a genuinely white field than with the inverse. */
+    background: #fff;
+    color: #000;
+  }
+  .qr svg { width: 100%; height: auto; display: block; }
+</style>

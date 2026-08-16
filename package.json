@@ -10,12 +10,15 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "npm run build && node --test 'tests/**/*.test.mjs' && node scripts/check-subresources.mjs dist"
+    "test": "npm run build && node --test 'tests/**/*.test.mjs' && node scripts/check-subresources.mjs dist",
+    "og": "node scripts/make-og.mjs"
   },
   "dependencies": {
     "astro": "^7.2.2"
   },
   "devDependencies": {
-    "node-html-parser": "^9.0.1"
+    "node-html-parser": "^9.0.1",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.3"
   }
 }

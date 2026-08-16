@@ -1,0 +1,101 @@
+---
+/**
+ * The paired call-to-action, and the one place the App Store gate is decided.
+ *
+ * THE INVARIANT this component exists to hold: the Mac download is never
+ * offered without the current state of the iPhone app beside it. The Mac host
+ * is half of a pair and is useless alone, so a bare "Download for Mac" button
+ * would generate a support ticket, not an install. tests/appstore.test.mjs
+ * asserts this on every page that renders a DMG link.
+ *
+ * Everything below reads APP_STORE_URL / TESTFLIGHT_URL from src/config.mjs.
+ * Setting either one lights up the real path with no edit here.
+ *
+ * No Apple "Download on the App Store" badge artwork is used. That badge is
+ * Apple's, distributed under its own identity guidelines, and is not ours to
+ * self-host — which the site's no-third-party-subresource rule would force us
+ * to do. A plain button is unambiguous and carries no licence question.
+ */
+import { APP_STORE_URL, TESTFLIGHT_URL, dmgUrl, MAC_VERSION, MAC_MIN_OS } from '../config.mjs';
+import Glyph from './Glyph.astro';
+
+const { compact = false } = Astro.props;
+const iphoneReady = APP_STORE_URL !== null;
+const beta = TESTFLIGHT_URL !== null;
+---
+<div class:list={['cta', compact && 'cta--compact']}>
+  <div class="btn-row cta__row">
+    <a class="btn btn--primary" href={dmgUrl()} data-mac-download>
+      <Glyph name="download" size={18} />
+      <span class="btn__stack">
+        <span>Download for Mac</span>
+        <span class="btn__sub">Version {MAC_VERSION} · macOS {MAC_MIN_OS}+</span>
+      </span>
+    </a>
+
+    { iphoneReady && (
+      <a class="btn" href={APP_STORE_URL}>
+        <Glyph name="phone" size={18} />
+        <span class="btn__stack">
+          <span>Get it on the App Store</span>
+          <span class="btn__sub">For iPhone</span>
+        </span>
+      </a>
+    )}
+
+    { !iphoneReady && beta && (
+      <a class="btn" href={TESTFLIGHT_URL}>
+        <Glyph name="phone" size={18} />
+        <span class="btn__stack">
+          <span>Join the iPhone beta</span>
+          <span class="btn__sub">TestFlight</span>
+        </span>
+      </a>
+    )}
+  </div>
+
+  {/* The honest half. Rendered whenever the iPhone app cannot actually be
+      installed — which is the state the site is in today. */}
+  { !iphoneReady && !beta && (
+    <p class="cta__pending" data-iphone-status>
+      <span class="cta__dot" aria-hidden="true"></span>
+      <span>
+        <strong>The iPhone app isn’t on the App Store yet.</strong>{' '}It’s in review. The Mac app above is ready and will update itself, but it
+        does nothing on its own until the iPhone half arrives — so grab it now
+        only if you’d like to be set up in advance.
+      </span>
+    </p>
+  )}
+</div>
+
+<style>
+  .cta { display: grid; gap: 1rem; justify-items: start; }
+  .close .cta, .cta--compact { justify-items: center; }
+  .cta__row { justify-content: inherit; }
+
+  .cta__pending {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+    max-width: 40rem;
+    margin: 0;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--graphite);
+    color: var(--text-mute);
+    font-size: var(--t-sm);
+    line-height: 1.55;
+    text-align: left;
+  }
+  .cta__pending strong { color: var(--text-dim); font-weight: 600; }
+
+  .cta__dot {
+    flex: none;
+    width: 7px; height: 7px;
+    margin-top: 0.55em;
+    border-radius: 50%;
+    background: var(--signal);
+    box-shadow: 0 0 0 3px var(--signal-haze);
+  }
+</style>
