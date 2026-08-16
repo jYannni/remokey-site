@@ -7,21 +7,37 @@ import StoreCta from '../components/StoreCta.astro';
 import { MAC_MIN_OS, IOS_MIN_OS } from '../config.mjs';
 
 /* Every claim below was checked against the shipped app source before it was
-   written. Deliberately absent, because the app does not do them: screen
-   mirroring, brightness, pinch-to-zoom, and control from outside the LAN. */
+   written, and re-checked by an adversarial audit afterwards — the comments
+   above the entries it corrected record what the code actually does.
+
+   Deliberately absent, because the app does not do them: screen mirroring,
+   brightness, pinch-to-zoom, and control from outside your own network. */
 const CAPS = [
   { g: 'dpad', t: 'A real trackpad',
-    d: 'Move, tap to click, two-finger tap to right-click, two-finger scroll, and tap-and-a-half to drag.' },
+    d: 'Move, tap to click, double-tap, two-finger tap to right-click, two-finger scroll, and tap-and-a-half to drag.' },
+  // NOT "keys repeat when held": SettingsStore.arrowRepeat defaults to
+  // .tapOnly, and KeyRepeater is only wired to the arrow pad and to seek.
+  // NOT "latch for the next keystroke": SettingsStore.latchMode defaults to
+  // .doubleTapLock, not .oneShot.
   { g: 'keyboard', t: 'The whole keyboard',
-    d: '⌘ ⌃ ⌥ ⇧ latch for the next keystroke, keys repeat when held, and shortcuts resolve against the Mac’s own layout.' },
+    d: '⌘ ⌃ ⌥ ⇧ arm for the next keystroke, or double-tap one to lock it on. What you type resolves against the Mac’s own layout, and follows it when you switch input source.' },
   { g: 'mic', t: 'Dictation that stays on the phone',
-    d: 'Hold to talk. Recognition is on-device only — server recognition is refused outright, never quietly substituted.' },
+    d: 'Hold to talk, or swipe up to lock it hands-free. Recognition is on-device only — server recognition is refused outright, never quietly substituted.' },
+  // NOT "what you see is the Mac's actual level": the host emits volumeState on
+  // connect and after a phone-issued command, but registers no CoreAudio
+  // property listener, so changing volume ON the Mac does not push an update.
   { g: 'playpause', t: 'Media and volume',
-    d: 'Real media keys, and a volume bar the Mac reports back to, so what you see is the Mac’s actual level.' },
+    d: 'Real media keys, and a volume bar that reads the Mac’s actual level rather than guessing at one.' },
   { g: 'desktops', t: 'Spaces and apps',
-    d: 'Switch desktops, open Mission Control, and jump between running apps from a grid of their real icons.' },
+    d: 'Switch desktops, open Mission Control, and jump between running apps from a grid of their real icons, fetched live from the Mac.' },
   { g: 'bolt', t: 'Shortcuts you define',
-    d: 'Build macros from modifiers and a key, give each one an icon, and lay the control bar out by dragging.' },
+    d: 'Build macros from modifiers and a key, and label each one with a symbol, some text, or one of your Mac’s own app icons.' },
+  { g: 'mac', t: 'It shows you what you’re typing into',
+    d: 'The phone names the Mac app that currently has focus, with its icon — so you are never typing blind into whatever happened to be in front.' },
+  { g: 'phone', t: 'Several Macs, one phone',
+    d: 'Pair as many as you like, rename them, and switch between them. Remove one and it forgets the phone right back.' },
+  { g: 'lock', t: 'Lock it from across the room',
+    d: 'Lock the screen outright, or press and hold to reach Restart and Shut Down behind a confirmation.' },
 ];
 ---
 <Base
@@ -94,16 +110,23 @@ const CAPS = [
       <!-- Steps -->
       <ol class="walk__steps">
         <li class="step" data-step="0">
+          <div class="step__art" aria-hidden="true"><Phone screen="connect" /></div>
           <p class="label">Step 01 — Find</p>
           <h3 class="t-lg">It finds your Mac by itself.</h3>
           <p>
             Open ReMoKey with the Mac app running and your Mac appears — no
-            addresses, no setup. If you would rather be explicit, or you are
-            coming in over your own VPN, type the address instead.
+            addresses, no setup. iOS asks once for permission to see your local
+            network; that is the whole of it.
+          </p>
+          <p class="step__aside">
+            You can always type an address instead — which is also the answer
+            over a VPN, or on the mesh and guest networks that quietly refuse to
+            pass discovery traffic.
           </p>
         </li>
 
         <li class="step" data-step="1">
+          <div class="step__art" aria-hidden="true"><Phone screen="pair" /></div>
           <p class="label">Step 02 — Confirm</p>
           <h3 class="t-lg">Two screens. One code.</h3>
           <p>
@@ -119,6 +142,7 @@ const CAPS = [
         </li>
 
         <li class="step" data-step="2">
+          <div class="step__art" aria-hidden="true"><Phone screen="control" /></div>
           <p class="label">Step 03 — Control</p>
           <h3 class="t-lg">Then it’s just a trackpad.</h3>
           <p>
@@ -128,8 +152,12 @@ const CAPS = [
             to dictate.
           </p>
           <p class="step__aside">
-            Pair once. After that the phone reconnects on its own whenever both
-            devices are on the same network.
+            The Mac asks for Accessibility the first time — macOS will not let
+            any app move your pointer without it. Skip it and the phone still
+            connects, but the Mac quietly ignores everything it sends.
+          </p>
+          <p class="step__aside">
+            Pair once. After that it connects by itself the moment you open it.
           </p>
         </li>
       </ol>
@@ -169,13 +197,15 @@ const CAPS = [
         <p class="label">Where it goes</p>
         <h2 class="t-xl" id="priv-h">Nowhere.<br />That’s the feature.</h2>
         <p class="lede">
-          There is no ReMoKey server, because there is nothing for one to do.
-          Your keystrokes go from your iPhone to your Mac and stop.
+          There is no ReMoKey server for your input to pass through, because
+          there is nothing for one to do. Your keystrokes go from your iPhone to
+          your Mac and stop.
         </p>
         <ul class="priv__list">
           <li><strong>No account, no sign-in, no subscription.</strong> Nothing to breach.</li>
           <li><strong>Encrypted, phone to Mac.</strong> The connection is authenticated by the key minted when you paired, held in your iPhone’s Keychain.</li>
           <li><strong>No analytics, no telemetry.</strong> Not reduced — absent.</li>
+          <li><strong>One outbound request, and you can read it.</strong> The Mac app fetches its update file once a day. That is the only thing either app contacts besides the other.</li>
           <li><strong>Dictation never leaves the phone.</strong> If your language has no on-device model, dictation simply doesn’t run.</li>
         </ul>
         <p>
@@ -322,9 +352,12 @@ const CAPS = [
     color: var(--text-mute);
   }
 
-  /* On narrow screens the device art appears inline between steps instead of
-     sticking, so the phone is never a floating thumbnail nobody can read. */
-  .walk__inline { margin: 0 auto 2rem; width: min(62%, 14rem); }
+  /* Narrow screens get the art inline, one device per step, because the sticky
+     column is display:none below 64rem — without this the walkthrough was three
+     blocks of prose and no picture, on a site about a phone app, viewed mostly
+     on a phone. Only the phone is shown: the Mac's HUD text is unreadable at
+     this width, and a device you cannot read is decoration. */
+  .step__art { width: min(58%, 13rem); margin: 0 0 1.75rem; }
 
   @media (min-width: 64rem) {
     .walk__grid {
@@ -371,6 +404,8 @@ const CAPS = [
        centre coincides with the final pinned frame. At the 78vh this used to
        be, the device column unstuck partway through step 2 and step 3 was
        delivered against an empty column. */
+    .step__art { display: none; }
+
     .step {
       min-height: 100svh;
       display: flex;

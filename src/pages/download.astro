@@ -12,9 +12,9 @@ const beta = TESTFLIGHT_URL !== null;
 const qrTarget = APP_STORE_URL ?? TESTFLIGHT_URL;
 
 const STEPS = [
-  'Open the DMG and drag ReMoKey to Applications.',
+  'Open the DMG and drag ReMoKey for Mac to Applications.',
   'Launch it. Setup opens on first run.',
-  'Grant Accessibility when asked — without it the Mac receives your input but ignores it.',
+  'Grant Accessibility. Without it the Mac receives your input and ignores it — and macOS only offers the prompt once, so if you dismissed it, setup switches to a button that opens System Settings.',
   'Choose “Pair new device…” from the menu-bar icon, then open ReMoKey on your iPhone.',
 ];
 ---
@@ -60,11 +60,11 @@ const STEPS = [
           </li>
           <li>
             <Glyph name="bolt" size={16} />
-            <span>Updates itself. It checks once a day and keeps your Accessibility grant across updates.</span>
+            <span>Updates itself, checking about once a day. Because the signature and bundle stay put, macOS keeps your Accessibility grant across updates.</span>
           </li>
           <li>
             <Glyph name="check" size={16} />
-            <span>Lives in the menu bar. No Dock icon, no window in your way.</span>
+            <span>Lives in the menu bar. Once setup is done there is no Dock icon and no window in your way.</span>
           </li>
         </ul>
 
