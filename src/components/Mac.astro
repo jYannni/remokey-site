@@ -1,0 +1,221 @@
+---
+/**
+ * A MacBook rendering the real ReMoKey host UI: the menu-bar mark and the
+ * notch HUD card.
+ *
+ * The menu-bar mark is redrawn from the deterministic geometry in the app's
+ * own icon generator (Scripts/make-app-icons.swift, drawMenuGlyph) — a key cap
+ * with Wi-Fi waves rising out of it, in template rendering, which is why it is
+ * a flat single colour here rather than the blue app icon.
+ *
+ * The HUD silhouette (NotchCardShape.swift) is the distinctive part: concave
+ * fillets at the top that flare outward so the screen edge curves *into* the
+ * card's sides, and ordinary 18pt rounded corners at the bottom. It reads as
+ * dropping out from behind the notch rather than floating.
+ *
+ * hud: 'none' | 'connecting' | 'connected' | 'code' | 'ready'
+ * waves: 0-3, how many waves the menu-bar mark shows
+ */
+const { hud = 'none', waves = 3, label, klass = '' } = Astro.props;
+
+// A per-instance suffix for the <defs> ids. The landing page renders hud
+// "connected" twice — hero and walkthrough — and two elements sharing
+// id="shell-connected" means every url(#shell-connected) in the document
+// resolves to the FIRST, so the second Mac was painted with the first one's
+// gradients and clipped by its clip path.
+globalThis.__rkMacSeq = (globalThis.__rkMacSeq ?? 0) + 1;
+const uid = `mc${globalThis.__rkMacSeq}`;
+
+const VB_W = 1640, VB_H = 1120;
+const SCR_X = 62, SCR_Y = 26, SCR_W = 1516, SCR_H = 968;
+const MENU_H = 38;
+const NOTCH_W = 216, NOTCH_H = 34;
+
+// Silhouette from NotchCardShape.swift; the 300pt width and the per-card
+// heights are in NotchHUDContent.swift. Top concave fillet 12, bottom radius 18.
+// Drawn at 1.9x so it reads at the scale the Mac is shown on the page.
+const K = 1.9;
+const CARD_W = 300 * K;
+const CARD_H = { connecting: 96, connected: 96, ready: 150, code: 226, none: 0 }[hud] * K;
+const RC = 12 * K, RB = 18 * K;
+const CARD_X = SCR_X + SCR_W / 2 - CARD_W / 2;
+
+const cardPath = (W, H, rc, rb) => [
+  `M ${-rc} 0`, `A ${rc} ${rc} 0 0 1 0 ${rc}`,
+  `L 0 ${H - rb}`, `A ${rb} ${rb} 0 0 0 ${rb} ${H}`,
+  `L ${W - rb} ${H}`, `A ${rb} ${rb} 0 0 0 ${W} ${H - rb}`,
+  `L ${W} ${rc}`, `A ${rc} ${rc} 0 0 1 ${W + rc} 0`, 'Z',
+].join(' ');
+
+const alt = label ?? {
+  none: 'A MacBook with the ReMoKey mark in its menu bar',
+  connecting: 'A MacBook showing a Connecting notification below the notch',
+  connected: 'A MacBook showing a Connected notification below the notch',
+  ready: 'A MacBook waiting for an iPhone to pair',
+  code: 'A MacBook showing a four-digit pairing code with a Confirm button',
+}[hud];
+
+const DEVICE = 'Yanko’s iPhone';
+---
+
+<div class={`mac ${klass}`}>
+  <svg viewBox={`0 0 ${VB_W} ${VB_H}`} role="img" aria-label={alt} class="mac__svg">
+    <defs>
+      <linearGradient id={`shell-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3a4049" /><stop offset="1" stop-color="#20242b" />
+      </linearGradient>
+      <linearGradient id={`wall-${uid}`} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#0d1a33" />
+        <stop offset=".45" stop-color="#122a52" />
+        <stop offset="1" stop-color="#07101f" />
+      </linearGradient>
+      <linearGradient id={`base-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#454b55" /><stop offset="1" stop-color="#181b21" />
+      </linearGradient>
+      <clipPath id={`scrclip-${uid}`}>
+        <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={SCR_H} rx="12" />
+      </clipPath>
+    </defs>
+
+    <!-- Lid -->
+    <rect x="40" y="0" width={VB_W - 80} height={SCR_H + 52} rx="26" fill={`url(#shell-${uid})`} />
+    <rect x="52" y="14" width={VB_W - 104} height={SCR_H + 26} rx="18" fill="#0a0c10" />
+
+    <g clip-path={`url(#scrclip-${uid})`}>
+      <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={SCR_H} fill={`url(#wall-${uid})`} />
+
+      <!-- Menu bar -->
+      <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={MENU_H} fill="rgba(0,0,0,0.42)" />
+      {[0, 1, 2, 3].map((i) => (
+        <rect x={SCR_X + 74 + i * 92} y={SCR_Y + 15} width={i === 0 ? 46 : 58} height="8"
+              rx="4" fill="rgba(255,255,255,0.34)" />
+      ))}
+
+      <!-- The ReMoKey menu-bar mark. Template-rendered in macOS, so it is the
+           menu bar's own foreground colour, never the blue app icon. -->
+      <g transform={`translate(${SCR_X + SCR_W - 244} ${SCR_Y + 5}) scale(28)`}
+         fill="none" stroke="#ffffff" stroke-linecap="round">
+        <g stroke-width="0.05">
+          {waves >= 1 && <path d="M 0.375 0.483 A 0.125 0.125 0 0 1 0.625 0.483" />}
+          {waves >= 2 && <path d="M 0.292 0.483 A 0.208 0.208 0 0 1 0.708 0.483" />}
+          {waves >= 3 && <path d="M 0.208 0.483 A 0.292 0.292 0 0 1 0.792 0.483" />}
+        </g>
+        <circle cx="0.5" cy="0.483" r="0.022" fill="#ffffff" stroke="none" />
+        <rect x="0.35" y="0.492" width="0.3" height="0.267" rx="0.067"
+              fill="#ffffff" stroke="none" />
+      </g>
+      {[0, 1].map((i) => (
+        <rect x={SCR_X + SCR_W - 172 + i * 46} y={SCR_Y + 15} width="26" height="8"
+              rx="4" fill="rgba(255,255,255,0.34)" />
+      ))}
+      <rect x={SCR_X + SCR_W - 96} y={SCR_Y + 14} width="62" height="10" rx="5"
+            fill="rgba(255,255,255,0.34)" />
+
+      <!-- Notch -->
+      <path d={`M ${SCR_X + SCR_W / 2 - NOTCH_W / 2} ${SCR_Y}
+                h ${NOTCH_W} v ${NOTCH_H - 12}
+                a 12 12 0 0 1 -12 12 h ${-(NOTCH_W - 24)}
+                a 12 12 0 0 1 -12 -12 Z`} fill="#000" />
+
+      <!-- Notch HUD -->
+      { hud !== 'none' && (
+        <g transform={`translate(${CARD_X} ${SCR_Y})`}>
+          <path d={cardPath(CARD_W, CARD_H, RC, RB)} fill="#000000" />
+          <g transform={`translate(0 ${NOTCH_H + 10})`} font-family="var(--body)">
+
+            { (hud === 'connecting' || hud === 'connected') && (
+              <g transform="translate(30 12)">
+                <rect x="0" y="0" width="72" height="72" rx="18" fill="rgba(255,255,255,0.1)" />
+                <g transform="translate(19 19)" fill="none" stroke="#fff" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="0.9" y="3" width="32" height="21" rx="3.5" transform="scale(1.03)" />
+                  <path d="M6 9.5h.6M12 9.5h.6M18 9.5h.6M24 9.5h.6M29 9.5h.6M6 15h.6M12 15h.6M18 15h.6M24 15h.6M29 15h.6M12 20.5h13" />
+                </g>
+                <text x="94" y="30" fill="#fff" font-size="26" font-weight="500">
+                  {hud === 'connected' ? 'Connected' : 'Connecting…'}
+                </text>
+                <text x="94" y="58" fill="rgba(255,255,255,0.6)" font-size="22">{DEVICE}</text>
+
+                { hud === 'connected' ? (
+                  <g transform="translate(392 22)" fill="none" stroke="#35c759"
+                     stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m0 13 10 10L30 1" />
+                  </g>
+                ) : (
+                  <g transform="translate(392 12)">
+                    {[0, 1, 2].map((i) => (
+                      <rect x={i * 17} y={36 - [13, 25, 36][i]} width="9.5"
+                            height={[13, 25, 36][i]} rx="4.7"
+                            fill={i === 0 ? '#fff' : 'rgba(255,255,255,0.28)'} />
+                    ))}
+                  </g>
+                )}
+              </g>
+            )}
+
+            { hud === 'ready' && (
+              <g text-anchor="middle">
+                <text x={CARD_W / 2} y="34" fill="#fff" font-size="26" font-weight="500">Ready to pair</text>
+                <text x={CARD_W / 2} y="68" fill="rgba(255,255,255,0.6)" font-size="22">Open ReMoKey on your iPhone</text>
+                <text x={CARD_W / 2} y="96" fill="rgba(255,255,255,0.6)" font-size="22">and choose this Mac</text>
+                <rect x={CARD_W / 2 - 150} y="122" width="300" height="6" rx="3" fill="rgba(255,255,255,0.15)" />
+                <rect x={CARD_W / 2 - 150} y="122" width="186" height="6" rx="3" fill="#fff" />
+                <text x={CARD_W / 2} y="158" fill="rgba(255,255,255,0.45)" font-size="20">74s remaining</text>
+              </g>
+            )}
+
+            { hud === 'code' && (
+              <g>
+                <text x={CARD_W / 2} y="32" fill="#fff" font-size="26" font-weight="500"
+                      text-anchor="middle">{DEVICE} wants to pair</text>
+                <text x={CARD_W / 2} y="64" fill="rgba(255,255,255,0.6)" font-size="22"
+                      text-anchor="middle">Does your iPhone show this code?</text>
+
+                {/* 44x52 tiles, 8pt radius, 26pt rounded monospaced */}
+                {['4', '9', '1', '7'].map((d, i) => (
+                  <g transform={`translate(${CARD_W / 2 - (4 * 44 * K + 3 * 8 * K) / 2 + i * (44 + 8) * K} 84)`}>
+                    <rect x="0" y="0" width={44 * K} height={52 * K} rx={8 * K}
+                          fill="rgba(255,255,255,0.1)" />
+                    <text x={44 * K / 2} y={52 * K * 0.68} fill="#fff" font-size={26 * K}
+                          font-weight="500" text-anchor="middle"
+                          style="font-variant-numeric:tabular-nums">{d}</text>
+                  </g>
+                ))}
+
+                {/* Buttons: 30pt tall, radius 8, affirmative on the right.
+                    Neither is a keyboard default — the panel never takes key
+                    focus, so a stray keystroke cannot mint a credential. */}
+                <g transform={`translate(${CARD_W / 2 - (2 * 130 + 16) * K / 2} 210)`}>
+                  <rect x="0" y="0" width={130 * K} height={30 * K} rx={8 * K}
+                        fill="rgba(255,255,255,0.14)" />
+                  <text x={130 * K / 2} y={30 * K * 0.68} fill="#fff" font-size={13 * K}
+                        text-anchor="middle">Not Now</text>
+                  <rect x={(130 + 16) * K} y="0" width={130 * K} height={30 * K} rx={8 * K} fill="#fff" />
+                  <text x={(130 + 16) * K + 130 * K / 2} y={30 * K * 0.68} fill="#000"
+                        font-size={13 * K} font-weight="600" text-anchor="middle">Confirm</text>
+                </g>
+
+                <rect x={CARD_W / 2 - 150} y={296} width="300" height="6" rx="3" fill="rgba(255,255,255,0.15)" />
+                <rect x={CARD_W / 2 - 150} y={296} width="122" height="6" rx="3" fill="#fff" />
+              </g>
+            )}
+          </g>
+        </g>
+      )}
+    </g>
+
+    <!-- Base -->
+    <path d={`M 8 ${SCR_H + 54} H ${VB_W - 8} l -44 46 H 52 Z`} fill={`url(#base-${uid})`} />
+    <rect x={VB_W / 2 - 92} y={SCR_H + 54} width="184" height="9" rx="4.5" fill="rgba(0,0,0,0.4)" />
+  </svg>
+</div>
+
+<style>
+  .mac {
+    width: 100%;
+    filter:
+      drop-shadow(0 2px 4px rgb(0 0 0 / 0.45))
+      drop-shadow(0 40px 70px rgb(0 0 0 / 0.5));
+  }
+  .mac__svg { width: 100%; height: auto; }
+</style>

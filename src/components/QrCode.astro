@@ -1,0 +1,80 @@
+---
+/**
+ * A QR code, encoded at BUILD time into inline SVG.
+ *
+ * Not an <img>, not a hosted QR service, and no runtime library. A third-party
+ * QR endpoint would breach the site's no-external-subresource rule and would
+ * also hand a stranger's server the fact that this visitor is looking at our
+ * download page. Inline SVG has neither problem, costs one request fewer, and
+ * stays crisp at any size.
+ *
+ * `qrcode` is a devDependency: it runs during `astro build` and nothing it
+ * produces reaches the browser except the path data below.
+ *
+ * The modules are built from the raw matrix rather than by scraping the `d` out
+ * of `QRCode.toString({type:'svg'})`. That was the first implementation and it
+ * rendered a BLANK code: the library emits its dark modules as a *stroked* path
+ * of open horizontal scanlines (`stroke="#000" d="M0 0.5h7m2 0h1…"`), so copying
+ * only the `d` and filling it draws a set of zero-area lines. Reading the matrix
+ * removes the dependency on how the library happens to serialise, which is not
+ * part of its API.
+ */
+import QRCode from 'qrcode';
+
+const { value, size = 148, label } = Astro.props;
+
+// Error-correction level M tolerates ~15% damage, the right level for a code
+// on a screen scanned from a foot away. H only makes the modules denser here.
+const qr = QRCode.create(value, { errorCorrectionLevel: 'M' });
+const n = qr.modules.size;
+const bits = qr.modules.data;
+
+// Merge each row's dark modules into horizontal runs. One rect per run rather
+// than per module is roughly a third of the path data and renders identically.
+const runs = [];
+for (let y = 0; y < n; y++) {
+  let x = 0;
+  while (x < n) {
+    if (!bits[y * n + x]) { x++; continue; }
+    let w = 1;
+    while (x + w < n && bits[y * n + x + w]) w++;
+    runs.push(`M${x} ${y}h${w}v1h-${w}z`);
+    x += w;
+  }
+}
+const d = runs.join('');
+
+// The quiet zone, in modules. The QR spec requires FOUR clear modules on every
+// side, and it has to live inside the viewBox rather than being approximated by
+// CSS padding: at size=148 the wrapper's 12px padding worked out to about three
+// modules, and the wrapper's border-radius then ate the corners of even that.
+// Baking it in means the margin is exactly four modules at every rendered size,
+// and any padding the wrapper adds is extra quiet zone, which is harmless.
+const Q = 4;
+const box = n + Q * 2;
+---
+<div class="qr" style={`--qr-size:${size}px`}>
+  <svg viewBox={`${-Q} ${-Q} ${box} ${box}`} width={size} height={size} role="img"
+       aria-label={label} shape-rendering="crispEdges">
+    <rect x={-Q} y={-Q} width={box} height={box} fill="#fff" />
+    <path d={d} fill="#000" />
+  </svg>
+</div>
+
+<style>
+  .qr {
+    width: var(--qr-size);
+    /* Deliberately dark-on-white rather than inheriting the page: scanners are
+       far more reliable with dark modules on a genuinely white field, and a
+       code nobody can scan is worse than no code.
+       
+       The white field and the four-module quiet zone are both drawn INSIDE the
+       svg now, so this padding is only the rounded card's inset — it can be
+       trimmed or removed without ever eating into the quiet zone. */
+    padding: 8px;
+    border-radius: 14px;
+    background: #fff;
+    color: #000;
+  }
+  .qr svg { width: 100%; height: auto; display: block; }
+</style>

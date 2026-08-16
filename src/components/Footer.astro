@@ -1,12 +1,93 @@
 ---
-import { SUPPORT_EMAIL, PRODUCT_NAME } from '../config.mjs';
+import { SUPPORT_EMAIL, PRODUCT_NAME, MAC_VERSION, MAC_MIN_OS, IOS_MIN_OS } from '../config.mjs';
 const year = new Date().getFullYear();
 ---
-<footer class="wrap" style="border-top:1px solid var(--line);margin-top:4rem;padding-top:1.5rem;padding-bottom:3rem;color:var(--muted);font-size:.9rem">
-  <p>
-    <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
-    &nbsp;·&nbsp;
-    <a href="/privacy/">Privacy</a>
+<footer class="ftr">
+  <hr class="rule" />
+  <div class="wrap ftr__in">
+    <div class="ftr__col">
+      <p class="ftr__brand">{PRODUCT_NAME}</p>
+      <p class="ftr__note">
+        Your iPhone, as your Mac's keyboard and trackpad. Over your own Wi-Fi,
+        device to device.
+      </p>
+    </div>
+
+    <nav class="ftr__col" aria-label="Footer">
+      <p class="ftr__h">Get it</p>
+      <a href="/download/">Download</a>
+      <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+    </nav>
+
+    <nav class="ftr__col" aria-label="Legal and help">
+      <p class="ftr__h">More</p>
+      <a href="/support/">Support</a>
+      <a href="/privacy/">Privacy</a>
+    </nav>
+
+    <div class="ftr__col">
+      <p class="ftr__h">Requires</p>
+      <p class="ftr__spec">macOS {MAC_MIN_OS} or later</p>
+      <p class="ftr__spec">iOS {IOS_MIN_OS} or later</p>
+      <p class="ftr__spec">Mac app {MAC_VERSION}</p>
+    </div>
+  </div>
+
+  <p class="wrap ftr__legal">
+    © {year} {PRODUCT_NAME}. Not affiliated with Apple Inc.
   </p>
-  <p>© {year} {PRODUCT_NAME}</p>
 </footer>
+
+<style>
+  .ftr { margin-top: clamp(4rem, 3rem + 4vw, 7rem); }
+
+  .ftr__in {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 2rem 1.5rem;
+    padding-block: clamp(2.5rem, 2rem + 2vw, 4rem) 2rem;
+  }
+  /* The lede column earns more room once there is room to give. */
+  @media (min-width: 60rem) {
+    .ftr__in { grid-template-columns: 2fr 1fr 1fr 1fr; }
+  }
+
+  .ftr__col { display: flex; flex-direction: column; gap: 0.15rem; align-items: flex-start; }
+
+  .ftr__brand {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .ftr__note {
+    color: var(--text-mute);
+    font-size: var(--t-sm);
+    max-width: 24rem;
+    margin: 0;
+  }
+  .ftr__h {
+    font-family: var(--mono);
+    font-size: var(--t-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin: 0 0 0.25rem;
+  }
+  .ftr__col a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: var(--t-sm);
+    padding-block: 0.6rem;
+  }
+  .ftr__col a:hover { color: var(--text); text-decoration: underline; }
+  .ftr__spec { color: var(--text-dim); font-size: var(--t-sm); margin: 0; }
+
+  .ftr__legal {
+    color: var(--text-mute);
+    font-size: var(--t-xs);
+    padding-bottom: 3rem;
+    margin: 0;
+  }
+</style>

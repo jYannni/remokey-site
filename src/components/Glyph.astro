@@ -1,0 +1,123 @@
+---
+/**
+ * Hand-drawn glyphs that stand in for the SF Symbols the app uses.
+ *
+ * These are NOT SF Symbols. Apple's SF Symbols licence permits use in app
+ * interfaces on Apple platforms; it does not permit redistributing the outlines
+ * as web assets. So each shape here is drawn from scratch to read as the same
+ * idea at a glance, and the mockups stay legally clean.
+ *
+ * Every glyph is drawn on a 24x24 grid with a 1.7 stroke so they optically
+ * match each other at small sizes.
+ */
+const { name, size = 20, klass = '' } = Astro.props;
+
+const S = { fill: 'none', stroke: 'currentColor', 'stroke-width': 1.7,
+            'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
+---
+<svg
+  viewBox="0 0 24 24" width={size} height={size}
+  class={klass} aria-hidden="true" focusable="false"
+  style="display:block;flex:none"
+>
+  {name === 'mac' && (
+    <g {...S}>
+      <rect x="2.5" y="4.5" width="19" height="13" rx="1.8" />
+      <path d="M9 20.5h6M10.5 17.5l-.4 3M13.5 17.5l.4 3" />
+    </g>
+  )}
+
+  {name === 'phone' && (
+    <g {...S}>
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.6" />
+      <path d="M10.4 5.2h3.2" />
+    </g>
+  )}
+
+  {/* A toothed ring, not a hub with spokes. The spoked version reads as a sun
+      at 20px, which is what the first draft of this looked like on the phone
+      mockup's status row. */}
+  {name === 'gear' && (
+    <g {...S}>
+      <path d="M10.1 2.9h3.8l.42 2.2 1.62.94 2.1-.78 1.9 3.29-1.68 1.45v1.87l1.68 1.45-1.9 3.29-2.1-.78-1.62.94-.42 2.2h-3.8l-.42-2.2-1.62-.94-2.1.78-1.9-3.29 1.68-1.45v-1.87L4.06 8.55l1.9-3.29 2.1.78 1.62-.94z" />
+      <circle cx="12" cy="12" r="2.6" />
+    </g>
+  )}
+
+  {name === 'lock' && (
+    <g {...S}>
+      <rect x="5" y="10.5" width="14" height="10" rx="2.4" />
+      <path d="M8.4 10.5V7.8a3.6 3.6 0 0 1 7.2 0v2.7" />
+    </g>
+  )}
+
+  {name === 'chevron-down' && <g {...S}><path d="m6.5 9.5 5.5 5.5 5.5-5.5" /></g>}
+  {name === 'chevron-right' && <g {...S}><path d="m9.5 5.5 6 6.5-6 6.5" /></g>}
+
+  {/* dock 1 — "dpad": arrow keys */}
+  {name === 'dpad' && (
+    <g {...S}>
+      <path d="M9.6 2.9h4.8v4.8h4.9v4.8h-4.9v4.8H9.6v-4.8H4.7V7.7h4.9z" />
+    </g>
+  )}
+
+  {/* dock 2 — "playpause.fill": media and seek */}
+  {name === 'playpause' && (
+    <g fill="currentColor">
+      <path d="M3.4 5.6a.7.7 0 0 1 1.06-.6l8 6.4a.7.7 0 0 1 0 1.2l-8 6.4a.7.7 0 0 1-1.06-.6z" />
+      <rect x="14.9" y="5" width="2.5" height="14" rx="1" />
+      <rect x="19.1" y="5" width="2.5" height="14" rx="1" />
+    </g>
+  )}
+
+  {/* dock 3 — "rectangle.on.rectangle": desktops */}
+  {name === 'desktops' && (
+    <g {...S}>
+      <rect x="2.6" y="6.6" width="12.8" height="9.6" rx="1.6" />
+      <path d="M8.6 19.4h11a1.8 1.8 0 0 0 1.8-1.8v-6" />
+    </g>
+  )}
+
+  {/* dock 4 — "keyboard" */}
+  {name === 'keyboard' && (
+    <g {...S}>
+      <rect x="1.8" y="5.6" width="20.4" height="12.8" rx="2.1" />
+      <path d="M5.4 9.4h.01M9 9.4h.01M12.6 9.4h.01M16.2 9.4h.01M18.6 9.4h.01M5.4 12.6h.01M9 12.6h.01M12.6 12.6h.01M16.2 12.6h.01M18.6 12.6h.01M8 15.6h8" />
+    </g>
+  )}
+
+  {name === 'expand' && (
+    <g {...S}>
+      <path d="M14.4 3.6h6v6M9.6 20.4h-6v-6M20.4 3.6 13.6 10.4M3.6 20.4l6.8-6.8" />
+    </g>
+  )}
+
+  {name === 'wifi' && (
+    <g {...S}>
+      <path d="M2.6 8.9a14.4 14.4 0 0 1 18.8 0M5.8 12.5a9.6 9.6 0 0 1 12.4 0M9 16.1a4.9 4.9 0 0 1 6 0" />
+      <circle cx="12" cy="19.6" r="1.15" fill="currentColor" stroke="none" />
+    </g>
+  )}
+
+  {name === 'check' && <g {...S}><path d="m4.8 12.6 4.8 4.8 9.6-10.8" /></g>}
+  {name === 'download' && (
+    <g {...S}>
+      <path d="M12 3.4v11.8M7.2 10.6l4.8 4.8 4.8-4.8M4 19.4h16" />
+    </g>
+  )}
+  {name === 'shield' && (
+    <g {...S}>
+      <path d="M12 2.7 4.6 5.9v6c0 4.2 3 8 7.4 9.4 4.4-1.4 7.4-5.2 7.4-9.4v-6z" />
+      <path d="m8.9 11.8 2.3 2.3 4-4.5" />
+    </g>
+  )}
+  {name === 'bolt' && (
+    <g fill="currentColor"><path d="M13.6 2 4.9 13.1a.5.5 0 0 0 .4.8h4.6l-1.4 7.5a.5.5 0 0 0 .88.4l8.7-11.1a.5.5 0 0 0-.4-.81h-4.6l1.4-7.5a.5.5 0 0 0-.88-.4z" /></g>
+  )}
+  {name === 'mic' && (
+    <g {...S}>
+      <rect x="9" y="2.6" width="6" height="11.2" rx="3" />
+      <path d="M5.4 11.6a6.6 6.6 0 0 0 13.2 0M12 18.2v3.2" />
+    </g>
+  )}
+</svg>

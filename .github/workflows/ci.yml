@@ -1,0 +1,64 @@
+name: CI
+
+# deploy.yml runs the build, the tests and the subresource guard — but only on
+# push to main, which is to say only AFTER a change is already merged and live.
+# A pull request got no checks at all. This runs the same gates on the PR, so a
+# red tick arrives before the merge button rather than after it.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Builds, then runs the suite, then the guard — chained with && so a
+      # failure anywhere is the same red.
+      - name: Build, test, and guard
+        run: npm test
+
+      # `npm test` already runs the guard, but a guard that silently stops
+      # running exits 0 and looks identical to one that passed. Re-run it alone
+      # and assert on its success output, so "it ran and found nothing" is
+      # proven rather than inferred. Byte-identical in intent to the same step
+      # in deploy.yml.
+      - name: Prove the subresource guard executed
+        run: |
+          set -o pipefail
+          out="$(node scripts/check-subresources.mjs dist)"
+          echo "$out"
+          echo "$out" | grep -q 'No third-party subresources' || {
+            echo "::error::Guard produced no success output — it may not have run at all."
+            exit 1
+          }
+
+      # The social card is committed rather than generated during the build,
+      # because it rasterises through librsvg and a GitHub runner does not have
+      # the same fonts as the machine it was designed on. That trade is only
+      # safe if the committed file stays in step with the script, so verify the
+      # dimensions the meta tags promise are the ones actually shipped.
+      - name: Check the social card matches its meta tags
+        run: |
+          node -e '
+            const { readFileSync } = require("node:fs");
+            const b = readFileSync("public/og.png");
+            const [w, h] = [b.readUInt32BE(16), b.readUInt32BE(20)];
+            if (w !== 1200 || h !== 630) {
+              console.error(`::error::og.png is ${w}x${h}, expected 1200x630. Run \`npm run og\`.`);
+              process.exit(1);
+            }
+            console.log(`og.png is ${w}x${h}.`);
+          '

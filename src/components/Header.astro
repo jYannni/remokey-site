@@ -1,10 +1,108 @@
 ---
 import { PRODUCT_NAME } from '../config.mjs';
+const path = Astro.url.pathname;
+const on = (p) => (path === p ? 'page' : undefined);
 ---
-<header class="wrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:1.5rem;padding-bottom:1.5rem">
-  <a href="/" style="font-weight:600;text-decoration:none;color:var(--fg)">{PRODUCT_NAME}</a>
-  <nav style="display:flex;gap:1rem">
-    <a href="/support/">Support</a>
-    <a href="/privacy/">Privacy</a>
-  </nav>
+<header class="hdr">
+  <div class="hdr__in wrap">
+    <a class="mark" href="/" aria-label={`${PRODUCT_NAME} home`}>
+      <!-- The app's own mark: a key cap with waves rising out of it. Redrawn
+           from the geometry in Scripts/make-app-icons.swift. -->
+      <svg viewBox="0 0 1 1" width="22" height="22" aria-hidden="true" class="mark__glyph">
+        <g fill="none" stroke="currentColor" stroke-width="0.05" stroke-linecap="round">
+          <path d="M 0.375 0.483 A 0.125 0.125 0 0 1 0.625 0.483" />
+          <path d="M 0.292 0.483 A 0.208 0.208 0 0 1 0.708 0.483" opacity=".62" />
+          <path d="M 0.208 0.483 A 0.292 0.292 0 0 1 0.792 0.483" opacity=".4" />
+        </g>
+        <circle cx="0.5" cy="0.483" r="0.022" fill="currentColor" />
+        <rect x="0.35" y="0.492" width="0.3" height="0.267" rx="0.067" fill="currentColor" />
+      </svg>
+      <span>{PRODUCT_NAME}</span>
+    </a>
+
+    <nav class="hdr__nav" aria-label="Main">
+      <a href="/download/" aria-current={on('/download/')}>Download</a>
+      <a href="/support/" aria-current={on('/support/')}>Support</a>
+      <a href="/privacy/" aria-current={on('/privacy/')}>Privacy</a>
+    </nav>
+  </div>
 </header>
+
+<style>
+  .hdr {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    /* Semi-opaque rather than transparent: the header crosses full-bleed art
+       further down the narrative and must stay legible over all of it. */
+    background: color-mix(in srgb, var(--void) 82%, transparent);
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s var(--ease), background-color 0.3s var(--ease);
+  }
+  /* `.is-stuck` is set once the page has scrolled off the top, so the hairline
+     only appears when there is content behind the header to separate from. */
+  :global(html.is-stuck) .hdr {
+    border-bottom-color: var(--line);
+    background: color-mix(in srgb, var(--void) 92%, transparent);
+  }
+
+  .hdr__in {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 60px;
+  }
+
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    /* Block padding, not just line-height, so the home link clears the 44px
+       pointer-target floor rather than the 27px its text alone gave it. */
+    padding-block: 0.72rem;
+    color: var(--text);
+    text-decoration: none;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+  }
+  .mark__glyph { color: var(--signal); flex: none; }
+
+  .hdr__nav {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.9rem, 0.4rem + 1.6vw, 1.9rem);
+    font-size: var(--t-sm);
+    font-weight: 500;
+  }
+  .hdr__nav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    padding-block: 0.76rem;
+    transition: color 0.18s var(--ease);
+  }
+
+  /* The wordmark plus three nav items overran a 320px viewport and pushed the
+     document 15px wide — `overflow-x: clip` on <body> does not contain overflow
+     that reaches the root element, so it was a real horizontal scrollbar on the
+     smallest phones still in use. Two steps down rather than a hamburger: three
+     links do not need a menu, they need less letter-spacing. */
+  @media (max-width: 26rem) {
+    .hdr__nav { font-size: 0.8125rem; gap: 0.85rem; }
+    .mark { font-size: 0.98rem; gap: 0.45rem; }
+  }
+  @media (max-width: 21rem) {
+    /* Glyph only. The <a> keeps its aria-label, so the home link is still
+       named for assistive tech. */
+    .mark span { display: none; }
+  }
+  .hdr__nav a:hover { color: var(--text); }
+  .hdr__nav a[aria-current='page'] {
+    color: var(--text);
+    box-shadow: inset 0 -1px 0 var(--signal);
+  }
+</style>
