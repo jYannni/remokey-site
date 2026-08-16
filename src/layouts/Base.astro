@@ -58,7 +58,11 @@ const isDoc = !!frontmatter;
   <body>
     <a class="skip" href="#main">Skip to content</a>
     <Header />
-    <main id="main" class={wide ? '' : `wrap wrap--text${isDoc ? ' doc' : ''}`}><slot /></main>
+    <!-- tabindex="-1" so the skip link actually MOVES focus rather than only
+         scrolling: Chrome's sequential-focus-start papers over the difference,
+         VoiceOver's reading cursor does not. scroll-margin-top keeps the
+         landing point clear of the sticky header. -->
+    <main id="main" tabindex="-1" class={wide ? '' : `wrap wrap--text${isDoc ? ' doc' : ''}`}><slot /></main>
     <Footer />
   </body>
 </html>

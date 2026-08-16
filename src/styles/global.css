@@ -60,7 +60,11 @@
 
   /* Signal. The only saturated colour in the system. */
   --signal:      #3e8bff;  /* icon gradient, top    — 6.6:1 on --void */
-  --signal-deep: #1c4fd0;  /* icon gradient, bottom */
+  --signal-deep: #1c4fd0;  /* icon gradient, bottom — white on it: 6.82:1 */
+  /* The top stop of any surface that carries WHITE text. --signal itself is
+     only 3.31:1 against white, so it may tint, glow and draw type — but it must
+     never sit behind a label. */
+  --signal-solid: #2f6fe0; /* white on it: 4.70:1 */
   --signal-lift: #6ba5ff;  /* hover / focus */
   --signal-haze: rgb(62 139 255 / 0.14);
   --signal-edge: rgb(62 139 255 / 0.32);
@@ -159,12 +163,19 @@ a:hover { color: var(--signal-lift); }
 
 .wrap--text { max-width: 46rem; }
 
+/* The skip link's landing point. Without this the first lines of content sit
+   behind the sticky header, and the focus ring the tabindex="-1" earns would be
+   drawn off-screen. */
+#main { scroll-margin-top: 5rem; }
+#main:focus { outline: none; }
+#main:focus-visible { outline: 2px solid var(--signal-lift); outline-offset: 4px; }
+
 .skip {
   position: absolute;
   left: -9999px;
   top: 0;
   z-index: 100;
-  background: var(--signal);
+  background: var(--signal-deep);
   color: #fff;
   padding: 0.75rem 1.25rem;
   border-radius: 0 0 var(--r-sm) 0;
@@ -243,7 +254,7 @@ a:hover { color: var(--signal-lift); }
 .btn:active { transform: translateY(0); }
 
 .btn--primary {
-  --btn-bg: linear-gradient(180deg, var(--signal) 0%, var(--signal-deep) 100%);
+  --btn-bg: linear-gradient(180deg, var(--signal-solid) 0%, var(--signal-deep) 100%);
   --btn-fg: #fff;
   --btn-edge: transparent;
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.18) inset,
@@ -265,6 +276,10 @@ a:hover { color: var(--signal-lift); }
   opacity: 0.75;
   letter-spacing: 0;
 }
+/* On the gradient, 0.75 alpha put this at 3.25:1. Size and weight already
+   separate it from the label above; the alpha was doing nothing the hierarchy
+   needed and everything the contrast ratio could not afford. */
+.btn--primary .btn__sub { opacity: 1; }
 
 .btn-row {
   display: flex;
@@ -310,25 +325,47 @@ a:hover { color: var(--signal-lift); }
   transform: translate3d(0, 18px, 0);
   transition: opacity 0.75s var(--ease-out), transform 0.75s var(--ease-out);
   transition-delay: var(--reveal-delay, 0ms);
+  /* Failsafe. Setting .js in <head> and revealing from a separate module means
+     two independent failure domains, only one of which gates the CSS: if the
+     module never executes, everything below the header stays invisible. This
+     animation costs nothing when the observer works (it lands on the same
+     values the transition already reached) and turns a blank page into a
+     two-second delay when it does not. */
+  animation: reveal-failsafe 1ms linear 2s forwards;
 }
+@keyframes reveal-failsafe { to { opacity: 1; transform: none; } }
 .reveal.is-in { opacity: 1; transform: none; }
 
 /* No JS: never hide anything. `.js` is set by an inline head script, so this
    is exactly the state a scripting-disabled browser lands in. */
 html:not(.js) .reveal { opacity: 1; transform: none; transition: none; }
 
-/* The motion layer is opt-out, not merely faster. Someone who asked for no
-   motion gets a static document that still reads top to bottom — the pinned
-   sections un-pin into normal flow (see narrative.css). */
+/* The motion layer is opt-out, not merely faster: someone who asked for no
+   motion gets a static document that reads top to bottom.
+   
+   The catch this originally missed is that the scroll engine does not only
+   animate — it also *undims*. Under reduced motion `start()` returns before the
+   step observer exists, so nothing was ever marked current and all three steps
+   sat at 0.4 opacity permanently: 2.13:1, the entire "how it works" section,
+   delivered to exactly the people who asked for less motion. Anything the
+   engine is responsible for restoring has to be restored here too. The
+   walkthrough's own reduced-motion layout lives in index.astro. */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .step { opacity: 1 !important; }
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Forced colours override colour but never opacity, so a dimmed element stays
+   dimmed inside a palette the user chose precisely to guarantee contrast. */
+@media (forced-colors: active) {
+  .btn__sub, .step { opacity: 1 !important; }
 }
 
 /* --- Long-form documents (privacy, support) -------------------------------
@@ -345,6 +382,7 @@ html:not(.js) .reveal { opacity: 1; transform: none; transition: none; }
 }
 .doc h3 { font-size: var(--t-md); margin-top: 2rem; margin-bottom: 0.6rem; }
 .doc p, .doc li { color: var(--text-dim); line-height: 1.72; }
+.doc h1, .doc h2, .doc h3, .doc p, .doc li, .doc code { overflow-wrap: anywhere; }
 .doc strong { color: var(--text); font-weight: 600; }
 .doc ul, .doc ol { padding-left: 1.25rem; margin: 0 0 1.25rem; }
 .doc li { margin-bottom: 0.4rem; }

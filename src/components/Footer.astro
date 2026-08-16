@@ -52,7 +52,7 @@ const year = new Date().getFullYear();
     .ftr__in { grid-template-columns: 2fr 1fr 1fr 1fr; }
   }
 
-  .ftr__col { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+  .ftr__col { display: flex; flex-direction: column; gap: 0.15rem; align-items: flex-start; }
 
   .ftr__brand {
     font-family: var(--display);
@@ -79,6 +79,7 @@ const year = new Date().getFullYear();
     color: var(--text-dim);
     text-decoration: none;
     font-size: var(--t-sm);
+    padding-block: 0.6rem;
   }
   .ftr__col a:hover { color: var(--text); text-decoration: underline; }
   .ftr__spec { color: var(--text-dim); font-size: var(--t-sm); margin: 0; }

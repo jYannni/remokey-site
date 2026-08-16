@@ -287,3 +287,57 @@ Held as hard requirements, not aspirations:
 5. **The archived `jyannni.remokey.app` Pages site still serving 200.** Pre-existing,
    noted in project memory, out of scope here — it needs unarchive → delete Pages →
    re-archive.
+
+---
+
+## 10. What adversarial review changed
+
+Two review passes ran against the finished branch: one checking every factual
+claim on the site against the app source, one hunting accessibility and
+robustness defects. Both were told to be hostile and to report only problems.
+
+They were worth more than the build. **Three claims on the page were simply
+false**, and each was false in the same direction — describing an option rather
+than the shipped default:
+
+| Claim | What the code does |
+|---|---|
+| "keys repeat when held" | `arrowRepeat` defaults to `.tapOnly`, i.e. off; and it is wired only to the arrow pad and seek, never to keys |
+| "⌘ ⌃ ⌥ ⇧ latch for the next keystroke" | `latchMode` defaults to `.doubleTapLock`, not `.oneShot` |
+| "No Dock icon, no window in your way" | the host promotes to `.regular` whenever a window is open, and setup opens itself on first run — which the same page said two bullets later |
+
+Four more were true-but-misleading: the volume bar does read the Mac's level but
+goes stale if you change it *on the Mac* (there is no CoreAudio listener);
+"shortcuts resolve against the Mac's own layout" holds for typed characters but
+not for the app's own hardcoded ⌘= / ⌘- / ⌘0 / ⌃⌘Q; "there is no ReMoKey
+server" reads as absolute while the Mac fetches an appcast daily; and
+auto-reconnect fires on open and foreground, not continuously.
+
+Two accessibility **blockers**, both invisible in normal use:
+
+1. Under `prefers-reduced-motion` the engine returns before the step observer
+   exists — so nothing was ever marked current, and the whole walkthrough sat at
+   **2.13:1** permanently. Delivered to exactly the people who asked for less
+   motion. The lesson generalises: *the motion layer was also doing un-dimming,
+   so opting out of motion opted out of legibility.* Anything the engine
+   restores has to be restorable without it.
+2. `.js` was set by an inline `<head>` script but content was revealed by a
+   separate module. Two failure domains, one gate: a module that 404s, is
+   blocked or throws left a blank page below the header. A CSS failsafe
+   animation now un-hides after two seconds regardless.
+
+Plus: white on `--signal` is 3.31:1, so the primary button and the skip link
+both failed AA (`--signal-solid` exists now purely to be the version that may
+sit behind white text); `list-style: none` strips list semantics in Safari but
+not Chromium, so a Chrome-only audit would never have seen it; the reduced-motion
+`change` handler leaked a listener pair per toggle; and `.close .cta` could never
+match, because Astro scopes *both* compounds of a selector to the component's own
+id — the site's final call to action was rendering 207px off-centre.
+
+**The step-dimming fix is the one worth remembering.** The obvious repair was to
+raise the dim from 0.4 to something legible. Measured, the alpha that clears
+4.5:1 for the aside's `--text-mute` is 0.90 — by which point the dimming is
+invisible and buys nothing. So the dimming is gone entirely, and the current step
+is marked by its label's rule growing and turning blue. Contrast cost: zero.
+
+Every one of these is now a test. Eighty-seven of them.

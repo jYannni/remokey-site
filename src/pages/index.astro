@@ -108,7 +108,7 @@ const CAPS = [
       </div>
 
       <!-- Steps -->
-      <ol class="walk__steps">
+      <ol class="walk__steps" role="list">
         <li class="step" data-step="0">
           <div class="step__art" aria-hidden="true"><Phone screen="connect" /></div>
           <p class="label">Step 01 — Find</p>
@@ -172,7 +172,7 @@ const CAPS = [
         <h2 class="t-xl" id="caps-h">Everything.<br />From the sofa.</h2>
       </header>
 
-      <ul class="caps__grid">
+      <ul class="caps__grid" role="list">
         {CAPS.map((c, i) => (
           <li class="cap reveal" style={`--reveal-delay:${i * 60}ms`}>
             <span class="cap__g" aria-hidden="true"><Glyph name={c.g} size={22} /></span>
@@ -201,7 +201,7 @@ const CAPS = [
           there is nothing for one to do. Your keystrokes go from your iPhone to
           your Mac and stop.
         </p>
-        <ul class="priv__list">
+        <ul class="priv__list" role="list">
           <li><strong>No account, no sign-in, no subscription.</strong> Nothing to breach.</li>
           <li><strong>Encrypted, phone to Mac.</strong> The connection is authenticated by the key minted when you paired, held in your iPhone’s Keychain.</li>
           <li><strong>No analytics, no telemetry.</strong> Not reduced — absent.</li>
@@ -312,9 +312,10 @@ const CAPS = [
     .stage__phone {
       grid-column: 1 / 5;
       grid-row: 1;
-      /* Deliberately shorter than the Mac so that, bottom-aligned, it reads as
-         standing in front of the Mac rather than covering it. At 15rem the
-         phone renders ~330px tall against the Mac's ~500px. */
+      /* Bottom-aligned and overlapping the Mac's lower-left, so the two read
+         as a pair. The phone is taller than the Mac's screen and hangs a little
+         below its base, which is what makes it read as standing in front
+         rather than sitting inside the composition. */
       width: min(100%, 13.5rem);
       justify-self: end;
       align-self: end;
@@ -334,6 +335,8 @@ const CAPS = [
 
   .walk__stick { display: none; }
 
+  /* role="list" is on the element itself: Safari drops the list role, and with
+     it the item count, as soon as list-style is none. */
   .walk__steps { list-style: none; margin: 0; padding: 0; }
 
   .step {
@@ -343,6 +346,14 @@ const CAPS = [
   }
   .step:first-child { border-top: 0; }
   .step h3 { margin-bottom: 0.9rem; }
+
+  /* How the current step is marked, now that opacity is off the table: the
+     hairline before its label grows and picks up the signal colour. */
+  .step .label::before {
+    transition: width 0.4s var(--ease), background-color 0.4s var(--ease);
+  }
+  .step.is-current .label::before { width: 3.2rem; background: var(--signal); }
+  .step.is-current .label { color: var(--text-dim); }
   .step p { color: var(--text-dim); }
   .step__aside {
     margin-top: 1.1rem;
@@ -412,18 +423,31 @@ const CAPS = [
       flex-direction: column;
       justify-content: center;
       border-top: 0;
-      opacity: 0.4;
-      transition: opacity 0.45s var(--ease);
+      /* No opacity dimming. It started at 0.4, which put the body text at
+         2.13:1 — and the alpha that WOULD clear 4.5:1 for the aside's
+         --text-mute is 0.90, at which point the dimming is invisible and buys
+         nothing. Marking the current step is a job for a mark, not for
+         degrading the legibility of the other two. */
+      transition: none;
     }
-    .step.is-current { opacity: 1; }
     /* A little runway so the last step is not flush against the section end. */
     .walk__steps { padding-bottom: 5svh; }
   }
 
   /* Without JS nothing ever gets `.is-current`, so dimming would leave every
-     step at 40% opacity permanently — text at that contrast is unreadable and
-     it is the whole page's content. */
+     step dimmed permanently — and it is the whole page's content. */
   :global(html:not(.js)) .step { opacity: 1; }
+
+  /* Reduced motion takes the same route as no-JS, for the same reason: the
+     engine that advances the sticky column never runs, so the column would sit
+     on step 1's art for all three steps — a Mac saying "Ready to pair" next to
+     the paragraph about using the trackpad. The inline art cannot be wrong,
+     because each copy belongs to its own step. */
+  @media (prefers-reduced-motion: reduce) {
+    .walk__stick { display: none !important; }
+    .step__art { display: block !important; width: min(48%, 12rem); }
+    .step { min-height: 0 !important; }
+  }
 
   /* With no JS every layer is visible, and stacking them would be a pile of
      overlapping phones. Show only the first and let the prose carry it. */
@@ -551,12 +575,27 @@ const CAPS = [
      static document rather than a fast version of the same animation. */
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const revealAll = () =>
+    document.querySelectorAll('.reveal').forEach((n) => n.classList.add('is-in'));
+
+  /* Every listener and observer this function installs is tied to one
+     AbortController, so a preference change can tear the whole engine down
+     rather than layering a second copy on top of the first. */
+  let live = null;
+
+  function stop() {
+    live?.abort();
+    live = null;
+  }
 
   function start() {
+    stop();
     if (reduced.matches) {
-      document.querySelectorAll('.reveal').forEach((n) => n.classList.add('is-in'));
+      revealAll();
       return;
     }
+    live = new AbortController();
+    const { signal } = live;
 
     /* 1 — Reveals. Unobserved once shown; nothing re-hides on scroll up. */
     const revealIO = new IntersectionObserver(
@@ -570,6 +609,7 @@ const CAPS = [
       { rootMargin: '0px 0px -8% 0px', threshold: 0.08 },
     );
     document.querySelectorAll('.reveal').forEach((n) => revealIO.observe(n));
+    signal.addEventListener('abort', () => revealIO.disconnect(), { once: true });
 
     /* 2 — Walkthrough. The step whose midpoint is nearest the middle of the
        viewport wins, which is stable while scrolling in either direction —
@@ -626,17 +666,15 @@ const CAPS = [
       });
     }
 
-    addEventListener('scroll', onScroll, { passive: true });
-    addEventListener('resize', onScroll, { passive: true });
+    addEventListener('scroll', onScroll, { passive: true, signal });
+    addEventListener('resize', onScroll, { passive: true, signal });
     onScroll();
   }
 
-  /* Normalise every signal path to a 0-1 length so the dash maths in CSS is
-     viewBox-independent. Attribute, not style: SVG geometry, not presentation. */
-  document.querySelectorAll('.sig').forEach((p) => p.setAttribute('pathLength', '1'));
-
   start();
-  /* Someone can turn reduced-motion on mid-visit. Re-running start() then only
-     ever reveals things — it never re-hides content. */
+  /* Someone can change the preference mid-visit. start() tears the previous
+     engine down first, so toggling never accumulates listeners, and both
+     branches only ever ADD `.is-in` — nothing here can re-hide content that has
+     already been revealed. */
   reduced.addEventListener?.('change', start);
 </script>

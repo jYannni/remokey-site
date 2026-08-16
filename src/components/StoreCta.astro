@@ -70,8 +70,13 @@ const beta = TESTFLIGHT_URL !== null;
 
 <style>
   .cta { display: grid; gap: 1rem; justify-items: start; }
-  .close .cta, .cta--compact { justify-items: center; }
-  .cta__row { justify-content: inherit; }
+  /* :global on the ancestor. Astro scopes every compound in a selector to the
+     component's own cid, so a bare `.close .cta` compiled to
+     `.close[cid-of-StoreCta] .cta[cid-of-StoreCta]` — and `.close` belongs to
+     index.astro, which carries a different cid. The rule matched nothing, and
+     the closing CTA sat 207px left of the centred section it lives in. */
+  :global(.close) .cta, .cta--compact { justify-items: center; }
+  :global(.close) .cta__row, .cta--compact .cta__row { justify-content: center; }
 
   .cta__pending {
     display: flex;
