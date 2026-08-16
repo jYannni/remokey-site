@@ -341,3 +341,46 @@ invisible and buys nothing. So the dimming is gone entirely, and the current ste
 is marked by its label's rule growing and turning blue. Contrast cost: zero.
 
 Every one of these is now a test. Eighty-seven of them.
+
+---
+
+## 11. What Codex caught that two review passes did not
+
+Codex reviewed the PR after both internal passes had signed off. It found two
+defects, and the more interesting thing about them is *why* they survived.
+
+**The QR code would have rendered blank.** `qrcode` emits its dark modules as a
+**stroked** path — open horizontal scanlines at half-pixel offsets,
+`stroke="#000" d="M0 0.5h7m2 0h1…"`. The component lifted only the `d` and
+rendered it with `fill`, which draws a set of zero-area lines and produces
+nothing at all.
+
+Nobody would have found out until App Store approval, because the QR is gated on
+`APP_STORE_URL` and renders nothing today. The test suite had a test called *"the
+encoded code round-trips back to the URL it was given"* which passed — because it
+decoded a PNG from `QRCode.toBuffer()`, a completely different code path from the
+one that rendered. **The test measured the library, not the component.** That is
+the generalisable lesson: a test for a feature that is currently switched off has
+to exercise the switched-off path itself, or it is testing nothing.
+
+The fix builds from `QRCode.create()`'s module matrix and emits closed rects,
+which also removes any dependency on how the library serialises SVG — never part
+of its API. Verified by rasterising the built page's own SVG with the gate
+temporarily opened: 50.8% dark coverage, reads as a QR code.
+
+**The reveal failsafe was racing the engine rather than backing it up.** The
+`animation: reveal-failsafe 1ms linear 2s forwards` added to fix the
+two-failure-domain blocker fired on *every* `.reveal` in the document after two
+seconds — including everything below the fold — and `forwards` left them
+permanently visible. So anyone who read the hero for two seconds before
+scrolling, which is most visitors, had every scroll reveal pre-fired and saw no
+animation at all.
+
+A fix for a rare failure had created a common one. It is now cancelled by
+`html.js-live .reveal { animation: none }`, with the engine claiming `js-live`
+only once the reveal observer is actually attached.
+
+**Both were fixed and both are now pinned by tests.** The pattern worth carrying
+forward: internal review found what the code *says*; Codex found what the code
+*does* when a flag flips. Gated features need their gate opened at least once,
+under test, before the branch ships.
