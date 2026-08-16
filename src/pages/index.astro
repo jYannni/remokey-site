@@ -116,9 +116,10 @@ const CAPS = [
 
   <!-- ═══ THE WALKTHROUGH ═══
        A sticky device beside three steps. Each step swaps the screen as it
-       reaches the middle of the viewport. IntersectionObserver rather than a
-       scrubbed timeline: it needs no per-frame work, it cannot desynchronise,
-       and with no JS all three steps simply read as prose. -->
+       reaches the middle of the viewport — nearest-midpoint wins, measured in
+       the same rAF-coalesced scroll handler as everything else, so scrolling
+       in either direction stays stable, and with no JS all three steps simply
+       read as prose. -->
   <section class="walk" id="how" aria-labelledby="how-h">
     <div class="wrap">
       <header class="walk__head reveal">
@@ -281,7 +282,7 @@ const CAPS = [
           <li><strong>No account, no sign-in, no subscription.</strong> Nothing to breach.</li>
           <li><strong>Encrypted, phone to Mac.</strong> The connection is authenticated by the key minted when you paired, held in your iPhone’s Keychain.</li>
           <li><strong>No analytics, no telemetry.</strong> Not reduced — absent.</li>
-          <li><strong>One outbound request, and you can read it.</strong> Once a day the Mac app fetches its update file — a public, plain-text feed. That address is the only thing either app ever contacts besides the other.</li>
+          <li><strong>One outbound request, and you can read it.</strong> Once a day the Mac app fetches its update feed — public, plain text, at updates.remokey.app. That is the only address either app ever contacts besides the other.</li>
           <li><strong>Dictation never leaves the phone.</strong> If your language has no on-device model, dictation simply doesn’t run.</li>
         </ul>
         <p>
@@ -294,7 +295,10 @@ const CAPS = [
            Wi-Fi and stops at the Mac. The internet is drawn — because leaving
            it out would dodge the question — and nothing reaches it. -->
       <div class="priv__art reveal" style="--reveal-delay:120ms" aria-hidden="true">
-        <svg viewBox="0 0 560 420" class="priv__svg" aria-hidden="true">
+        {/* 584 wide, not 560: the svg root clips at the viewBox edge, and the
+            cloud caption at its enlarged narrow-viewport size needs the
+            margin — measured, not eyeballed. */}
+        <svg viewBox="0 0 584 420" class="priv__svg" aria-hidden="true">
           <!-- Your network: the boundary everything happens inside -->
           <rect x="22" y="46" width="356" height="340" rx="44"
                 fill="var(--signal-haze)" stroke="var(--line-lit)"
@@ -324,7 +328,9 @@ const CAPS = [
                 stroke="var(--signal)" stroke-width="2.5" stroke-linecap="round" />
           <path d="M 206 202 l 9 -6.5 -11 -2.5" fill="none" stroke="var(--signal)"
                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-          <circle class="priv__pkt" cx="160" cy="248" r="4.5" fill="var(--signal)" />
+          {/* cx/cy sit ON the Bezier (its ~40% point), because they are the
+              static fallback for engines without offset-path. */}
+          <circle class="priv__pkt" cx="168" cy="251" r="4.5" fill="var(--signal)" />
 
           <!-- The internet, present and unreached. The gap between the
                boundary and the cloud is the whole argument. -->
@@ -333,9 +339,12 @@ const CAPS = [
                   fill="none" stroke="var(--text-mute)" stroke-width="1.6"
                   stroke-dasharray="5 6" stroke-linecap="round" />
             {/* "Not involved" contradicted the update-check bullet beside the
-                diagram. Scoped to input, which is what the section claims. */}
-            <text x="410" y="196" class="priv__cap priv__cap--mute">The internet —</text>
-            <text x="410" y="218" class="priv__cap priv__cap--mute">never sees your input</text>
+                diagram. Scoped to input, which is what the section claims.
+                Centred under the cloud and kept short: the svg root clips at
+                the 560-unit viewBox edge, and a longer left-anchored line
+                lost its final word — checked at both caption sizes. */}
+            <text x="470" y="196" text-anchor="middle" class="priv__cap priv__cap--mute">The internet</text>
+            <text x="470" y="218" text-anchor="middle" class="priv__cap priv__cap--mute">gets none of it</text>
           </g>
         </svg>
       </div>
@@ -819,7 +828,7 @@ const CAPS = [
 
 <script>
   /* ═════ The whole motion layer ═════
-     Two observers and one rAF-coalesced scroll handler. No dependencies.
+     One observer and one rAF-coalesced scroll handler. No dependencies.
 
      Bails out entirely under prefers-reduced-motion: the listeners are never
      attached and every element is left in its finished state, so the page is a

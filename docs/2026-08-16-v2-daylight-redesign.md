@@ -199,7 +199,21 @@ the two deliberate declines are recorded last.
 - *Copy critic's headline vote:* keep "Across the room is close enough." —
   unanimous with the author.
 
-<!-- CRITIC-FINDINGS-ROUND-2 -->
+### Round 2 — verification
+
+Three verifiers re-reviewed the fixed branch against fresh captures. Design
+and engineering approved with every assigned fix independently confirmed
+(including pixel-level checks that the landed phone's text artifact is gone
+and greps that `--jsw`/`will-change` left no residue). The copy verifier
+raised one blocker — introduced by round 1's own caption fix: the enlarged
+privacy caption overran the 560-unit viewBox and the svg root clipped its
+final word in both themes. Fixed by shortening and centring the caption under
+the cloud ("The internet / gets none of it") and widening the viewBox to 584;
+the un-clip was then *measured* at desktop and narrow widths, not eyeballed.
+Its polish notes were also taken: the update-check bullet now names
+updates.remokey.app (closing the "That address" antecedent), two stale
+engine comments were corrected, and the packet's static fallback dot now
+sits on the Bezier it claims to ride.
 
 ## 8. Deliberately not done
 
