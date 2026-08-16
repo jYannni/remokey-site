@@ -37,7 +37,8 @@ const beta = TESTFLIGHT_URL !== null;
       <a class="btn" href={APP_STORE_URL}>
         <Glyph name="phone" size={18} />
         <span class="btn__stack">
-          <span>Get it on the App Store</span>
+          {/* Apple's badge idiom, not Google Play's "Get it on". */}
+          <span>Download on the App Store</span>
           <span class="btn__sub">For iPhone</span>
         </span>
       </a>

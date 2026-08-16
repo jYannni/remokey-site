@@ -47,19 +47,26 @@ const on = (p) => (path === p ? 'page' : undefined);
 
 <script>
   /* The other half lives in Base.astro's inline head script, which applies the
-     stored theme before first paint. This half only has to flip it. */
+     stored theme before first paint. This half flips it, and keeps every
+     surface that mirrors the theme — the toggle's aria state and the
+     theme-color meta — in step through one helper. */
   const THEME_COLOR = { light: '#f4f1e9', dark: '#111214' };
   const root = document.documentElement;
   const meta = document.querySelector('meta[name="theme-color"]');
+  const toggles = [...document.querySelectorAll('[data-theme-toggle]')];
 
-  for (const btn of document.querySelectorAll('[data-theme-toggle]')) {
-    btn.setAttribute('aria-pressed', String(root.dataset.theme === 'dark'));
+  function apply(dark) {
+    if (dark) root.dataset.theme = 'dark';
+    else delete root.dataset.theme;
+    for (const b of toggles) b.setAttribute('aria-pressed', String(dark));
+    meta?.setAttribute('content', dark ? THEME_COLOR.dark : THEME_COLOR.light);
+  }
+
+  apply(root.dataset.theme === 'dark');
+  for (const btn of toggles) {
     btn.addEventListener('click', () => {
       const dark = root.dataset.theme !== 'dark';
-      if (dark) root.dataset.theme = 'dark';
-      else delete root.dataset.theme;
-      btn.setAttribute('aria-pressed', String(dark));
-      meta?.setAttribute('content', dark ? THEME_COLOR.dark : THEME_COLOR.light);
+      apply(dark);
       try {
         localStorage.setItem('rk-theme', dark ? 'dark' : 'light');
       } catch {
@@ -67,6 +74,28 @@ const on = (p) => (path === p ? 'page' : undefined);
       }
     });
   }
+
+  /* Back/forward-cache restores freeze the DOM as it was when the page was
+     left — toggle dark on another page, press Back, and this page would come
+     back light while localStorage says dark. Neither script re-runs on a
+     bfcache restore; pageshow is the hook that does fire. */
+  addEventListener('pageshow', (e) => {
+    if (!e.persisted) return;
+    let dark = false;
+    try {
+      dark = localStorage.getItem('rk-theme') === 'dark';
+    } catch {
+      /* Unreadable storage falls back to the light default. */
+    }
+    apply(dark);
+  });
+
+  /* The header hairline. State, not motion: it belongs to the header on every
+     page — not to the landing page's scroll engine, which does not run on the
+     other pages and never runs under prefers-reduced-motion. */
+  const stuck = () => root.classList.toggle('is-stuck', scrollY > 8);
+  addEventListener('scroll', stuck, { passive: true });
+  stuck();
 </script>
 
 <style>

@@ -75,13 +75,27 @@ test('body text tokens clear AA on the canvas, in both themes', () => {
   // --signal-ink is the one allowed to colour text. If someone tunes a theme's
   // canvas without re-checking the text tokens, this is what catches it.
   for (const { label, token } of THEMES) {
-    for (const name of ['text', 'text-dim', 'text-mute', 'signal-ink']) {
+    for (const name of ['text', 'text-dim', 'text-mute', 'signal-ink', 'good']) {
       const r = ratio(token(name), token('bg'));
       assert.ok(
         r >= 4.5,
         `${label}: --${name} (${token(name)}) on --bg (${token('bg')}) is ${r.toFixed(2)}:1, needs 4.5:1`,
       );
     }
+  }
+});
+
+test("the 'Available' chip's tinted background does not sink --good below AA", () => {
+  // --good's hardest real usage: 11px uppercase text over its OWN 9% tint on
+  // --card (download page chips). The token passed on --bg while failing here,
+  // and the failure hid behind a hand-written comment claiming otherwise.
+  for (const { label, token } of THEMES) {
+    const chipBg = over(token('good'), token('card'), 0.09);
+    const r = ratio(token('good'), chipBg);
+    assert.ok(
+      r >= 4.5,
+      `${label}: --good (${token('good')}) on its 9% chip tint (${chipBg}) is ${r.toFixed(2)}:1, needs 4.5:1`,
+    );
   }
 });
 
@@ -113,18 +127,26 @@ test('walkthrough steps are never dimmed below AA', () => {
   //
   // If someone reintroduces opacity dimming, this makes them prove it is legible
   // for the DIMMEST colour in the block, not the brightest — in both themes.
-  const block = index.match(/\n    \.step \{([\s\S]*?)\n    \}/)?.[1] ?? '';
-  const op = Number(block.match(/opacity:\s*([\d.]+)/)?.[1] ?? 1);
-  assert.ok(op > 0, '.step opacity must not be 0');
-  if (op === 1) return;
-  for (const { label, token } of THEMES) {
-    for (const name of ['text-dim', 'text-mute']) {
-      const r = ratio(over(token(name), token('bg'), op), token('bg'));
-      assert.ok(
-        r >= 4.5,
-        `${label}: a non-current step renders --${name} at ${r.toFixed(2)}:1 (opacity ${op}); ` +
-        `needs 4.5:1. Mark the current step without lowering the others' contrast.`,
-      );
+  //
+  // EVERY `.step`-prefixed block is inspected, not one indentation level: the
+  // dimming could come back on the outer rule, the media-query copy, or a
+  // `.step:not(.is-current)` variant, and a regex pinned to one of those
+  // would wave the other two through.
+  const blocks = [...index.matchAll(/\.step[^,{]*\{([^}]*)\}/g)];
+  assert.ok(blocks.length > 0, 'no .step rule found in index.astro');
+  for (const [, body] of blocks) {
+    const op = Number(body.match(/opacity:\s*([\d.]+)/)?.[1] ?? 1);
+    assert.ok(op > 0, '.step opacity must not be 0');
+    if (op === 1) continue;
+    for (const { label, token } of THEMES) {
+      for (const name of ['text-dim', 'text-mute']) {
+        const r = ratio(over(token(name), token('bg'), op), token('bg'));
+        assert.ok(
+          r >= 4.5,
+          `${label}: a non-current step renders --${name} at ${r.toFixed(2)}:1 (opacity ${op}); ` +
+          `needs 4.5:1. Mark the current step without lowering the others' contrast.`,
+        );
+      }
     }
   }
 });
@@ -150,6 +172,15 @@ test('reduced motion swaps the sticky column for the inline per-step art', () =>
   assert.ok(block, 'index.astro has no reduced-motion block');
   assert.match(block, /\.walk__stick\s*\{[^}]*display:\s*none/);
   assert.match(block, /\.step__art\s*\{[^}]*display:\s*block/);
+});
+
+test('no JavaScript swaps the sticky column the same way reduced motion does', () => {
+  // The two paths kill the same engine, so they need the same layout answer.
+  // Without these, a scriptless desktop pins a Mac frozen on "Ready to pair"
+  // beside steps 2 and 3 and stretches every step to an empty viewport.
+  assert.match(index, /html:not\(\.js\)\)?\s*\.walk__stick\s*\{[^}]*display:\s*none/);
+  assert.match(index, /html:not\(\.js\)\)?\s*\.step__art\s*\{[^}]*display:\s*block/);
+  assert.match(index, /html:not\(\.js\)\)?\s*\.step\s*\{[^}]*min-height:\s*0/);
 });
 
 test('forced-colors resets opacity, which it cannot override itself', () => {

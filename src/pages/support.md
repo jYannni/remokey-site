@@ -7,7 +7,7 @@ description: Getting help with ReMoKey.
 # Support
 
 Every message is read, and every message gets a reply. Please allow a few
-days — support answers come from the people who build ReMoKey, not a ticket
+days — answers come from the desk where ReMoKey is built, not a ticket
 queue.
 
 ## Reporting a problem

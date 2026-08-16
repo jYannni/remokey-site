@@ -174,8 +174,10 @@ const DEVICE = 'Yanko’s iPhone';
         <text x={SCR_X + SCR_W - 26} y={SCR_Y + 25} text-anchor="end"
               font-family="var(--body)" font-size="15" fill={MB_FG}>Sat 16 Aug&#8194;21:42</text>
 
-        <!-- Control Center: the two-pill switchboard -->
-        <g transform={`translate(${SCR_X + SCR_W - 202} ${SCR_Y + 11})`} fill="none"
+        <!-- Control Center: the two-pill switchboard. The whole status group
+             sits 18 units closer to the clock than a first draft, so the
+             CC→clock gap matches the ~20-unit rhythm of the other items. -->
+        <g transform={`translate(${SCR_X + SCR_W - 184} ${SCR_Y + 11})`} fill="none"
            stroke={MB_FG} stroke-width="1.6">
           <rect x="0" y="0" width="17" height="7.2" rx="3.6" />
           <circle cx="4.4" cy="3.6" r="1.5" fill={MB_FG} stroke="none" />
@@ -184,14 +186,14 @@ const DEVICE = 'Yanko’s iPhone';
         </g>
 
         <!-- Wi-Fi -->
-        <g transform={`translate(${SCR_X + SCR_W - 244} ${SCR_Y + 11})`} fill="none"
+        <g transform={`translate(${SCR_X + SCR_W - 226} ${SCR_Y + 11})`} fill="none"
            stroke={MB_FG} stroke-width="1.9" stroke-linecap="round">
           <path d="M1 5.4a12.4 12.4 0 0 1 16 0M4 8.9a7.9 7.9 0 0 1 10 0M7 12.4a3.6 3.6 0 0 1 4 0" />
           <circle cx="9" cy="15" r="1.4" fill={MB_FG} stroke="none" />
         </g>
 
         <!-- Battery -->
-        <g transform={`translate(${SCR_X + SCR_W - 298} ${SCR_Y + 12})`}>
+        <g transform={`translate(${SCR_X + SCR_W - 280} ${SCR_Y + 12})`}>
           <rect x="0" y="0" width="30" height="14" rx="4" fill="none" stroke={MB_FG}
                 stroke-opacity=".5" stroke-width="1.4" />
           <rect x="2.4" y="2.4" width="19" height="9.2" rx="2.2" fill={MB_FG} />
@@ -201,7 +203,7 @@ const DEVICE = 'Yanko’s iPhone';
         <!-- The ReMoKey menu-bar mark. Template-rendered in macOS, so it takes
              the menu bar's own foreground colour — dark here, never the blue
              app icon. -->
-        <g transform={`translate(${SCR_X + SCR_W - 352} ${SCR_Y + 5}) scale(28)`}
+        <g transform={`translate(${SCR_X + SCR_W - 334} ${SCR_Y + 5}) scale(28)`}
            fill="none" stroke={MB_FG} stroke-linecap="round">
           <g stroke-width="0.05">
             {waves >= 1 && <path d="M 0.375 0.483 A 0.125 0.125 0 0 1 0.625 0.483" />}
@@ -228,7 +230,9 @@ const DEVICE = 'Yanko’s iPhone';
             <path d={`M ${DOCK_S * 0.3} 18 v 8 M ${DOCK_S * 0.66} 18 v 8`} />
             <path d={`M ${DOCK_S * 0.24} 37 q ${DOCK_S * 0.24} 9 ${DOCK_S * 0.5} 0`} />
           </g>
-          <circle cx={DOCK_S / 2} cy={DOCK_S + 15} r="2.2" fill="rgba(20,20,30,0.55)" />
+          {/* Running indicator: centred in the band between the icon's bottom
+              (54) and the shelf's bottom edge (DOCK_H − 10 = 64 local). */}
+          <circle cx={DOCK_S / 2} cy={DOCK_S + 5.5} r="2.2" fill="rgba(20,20,30,0.45)" />
         </g>
 
         <!-- Safari -->
@@ -236,10 +240,11 @@ const DEVICE = 'Yanko’s iPhone';
           <rect width={DOCK_S} height={DOCK_S} rx="12" fill="#f4f7fb" />
           <circle cx={DOCK_S / 2} cy={DOCK_S / 2} r="21" fill="#3aa7f0" />
           <circle cx={DOCK_S / 2} cy={DOCK_S / 2} r="21" fill="none" stroke="#1c7cd6" stroke-width="1.4" />
-          <path d={`M ${DOCK_S / 2 + 11} ${DOCK_S / 2 - 11} L ${DOCK_S / 2 + 2.5} ${DOCK_S / 2 - 2.5} L ${DOCK_S / 2 - 11} ${DOCK_S / 2 + 11} L ${DOCK_S / 2 - 2.5} ${DOCK_S / 2 + 2.5} Z`}
-                fill="#ffffff" />
-          <path d={`M ${DOCK_S / 2 + 11} ${DOCK_S / 2 - 11} L ${DOCK_S / 2 + 2.5} ${DOCK_S / 2 - 2.5} L ${DOCK_S / 2 - 2.5} ${DOCK_S / 2 + 2.5} Z`}
-                fill="#f5424e" />
+          {/* The needle's waist is offset PERPENDICULAR to the NE-SW diagonal.
+              A first draft put all four vertices on the x+y=54 line itself —
+              two zero-area polygons, and Safari rendered as a blank blue disc. */}
+          <path d="M 38 16 L 29.3 29.3 L 16 38 L 24.7 24.7 Z" fill="#ffffff" />
+          <path d="M 38 16 L 29.3 29.3 L 24.7 24.7 Z" fill="#f5424e" />
         </g>
 
         <!-- Messages -->

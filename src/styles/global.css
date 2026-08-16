@@ -73,7 +73,11 @@
   /* The one warm note: dawn light in the hero and nowhere structural. */
   --dawn: rgb(255 154 84 / 0.16);
 
-  --good: #1d8a43;         /* affirmative on light paper — 4.53:1 */
+  /* Affirmative. Its real job is 11px chip text over a 9% green tint, the
+     harshest pairing it faces: 4.91:1 there, 5.06:1 on --bg. The previous
+     #1d8a43 failed that chip at 3.84:1 while its comment claimed otherwise —
+     the a11y suite now pins this token like every other text colour. */
+  --good: #157635;
 
   /* Device art shadows. Warm and soft on paper; deepened for dark below. */
   --shadow-device:
@@ -127,10 +131,13 @@
   --text-mute: #878d96;  /*  5.6:1 */
 
   --signal-ink: #5c9dff;  /* 6.89:1 on --bg */
-  --signal-haze: rgb(62 139 255 / 0.13);
+  /* Both glows run hotter than light's: the same alphas that read as
+     atmosphere on paper vanish into charcoal, and the hero loses the two-glow
+     sketch of the journey. */
+  --signal-haze: rgb(62 139 255 / 0.17);
   --signal-edge: rgb(62 139 255 / 0.32);
 
-  --dawn: rgb(255 154 84 / 0.07);
+  --dawn: rgb(255 154 84 / 0.12);
 
   --good: #35c759;
 

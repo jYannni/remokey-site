@@ -8,7 +8,7 @@ const year = new Date().getFullYear();
     <div class="ftr__col">
       <p class="ftr__brand">{PRODUCT_NAME}</p>
       <p class="ftr__note">
-        Your iPhone, as your Mac's keyboard and trackpad. Over your own Wi-Fi,
+        Your iPhone, as your Mac’s keyboard and trackpad. Over your own Wi-Fi,
         device to device.
       </p>
     </div>
@@ -16,13 +16,15 @@ const year = new Date().getFullYear();
     <nav class="ftr__col" aria-label="Footer">
       <p class="ftr__h">Get it</p>
       <a href="/download/">Download</a>
-      <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
     </nav>
 
     <nav class="ftr__col" aria-label="Legal and help">
       <p class="ftr__h">More</p>
       <a href="/support/">Support</a>
       <a href="/privacy/">Privacy</a>
+      {/* The contact address lives beside Support, where a person looking
+          for help actually looks — it sat under "Get it" by accident. */}
+      <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
     </nav>
 
     <div class="ftr__col">
@@ -39,7 +41,10 @@ const year = new Date().getFullYear();
 </footer>
 
 <style>
-  .ftr { margin-top: clamp(4rem, 3rem + 4vw, 7rem); }
+  /* Modest on purpose: each page already ends with its own bottom padding,
+     and this margin stacks on top of it. At the old 7rem the close-of-page →
+     footer gap reached ~16rem and read as a missing section. */
+  .ftr { margin-top: clamp(2rem, 1.5rem + 1.5vw, 3.5rem); }
 
   .ftr__in {
     display: grid;

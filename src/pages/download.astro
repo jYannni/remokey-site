@@ -21,16 +21,23 @@ const STEPS = [
 <Base
   wide
   title="Download ReMoKey"
-  description="Get ReMoKey for Mac, and find out where the iPhone app is up to."
+  description={iphoneReady
+    ? 'Get ReMoKey for Mac and ReMoKey for iPhone — the pair that turns your iPhone into your Mac’s keyboard and trackpad.'
+    : 'Get ReMoKey for Mac, and see where the iPhone app is up to.'}
 >
   <section class="dl">
-    <div class="wrap dl__head">
-      <p class="label">Download</p>
-      <h1 class="t-xl">Two apps.<br />You need both.</h1>
-      <p class="lede">
-        ReMoKey is a pair: a menu-bar app on the Mac, and the app on your iPhone
-        that drives it. Neither does anything by itself.
-      </p>
+    <!-- .wrap and .dl__head on separate elements: .wrap centres itself with
+         margin-inline auto, so combining them centred the 40rem header as a
+         box and left it floating ~300px off the grid it introduces. -->
+    <div class="wrap">
+      <header class="dl__head">
+        <p class="label">Download</p>
+        <h1 class="t-xl">Two apps.<br />You need both.</h1>
+        <p class="lede">
+          ReMoKey is a pair: a menu-bar app on the Mac, and the app on your iPhone
+          that drives it. Neither does anything by itself.
+        </p>
+      </header>
     </div>
 
     <div class="wrap dl__grid">
@@ -97,7 +104,7 @@ const STEPS = [
           <a class="btn btn--primary pane__btn" href={APP_STORE_URL}>
             <Glyph name="phone" size={18} />
             <span class="btn__stack">
-              <span>Get it on the App Store</span>
+              <span>Download on the App Store</span>
               <span class="btn__sub">Free</span>
             </span>
           </a>

@@ -19,7 +19,7 @@ const CAPS = [
   // .tapOnly, and KeyRepeater is only wired to the arrow pad and to seek.
   // NOT "latch for the next keystroke": SettingsStore.latchMode defaults to
   // .doubleTapLock, not .oneShot.
-  { g: 'keyboard', t: 'The whole keyboard', size: 'wide',
+  { g: 'keyboard', t: 'The full keyboard', size: 'wide',
     d: '⌘ ⌃ ⌥ ⇧ arm for the next keystroke, or double-tap one to lock it on. What you type resolves against the Mac’s own layout, and follows it when you switch input source.' },
   { g: 'mic', t: 'Dictation that stays on the phone',
     d: 'Hold to talk, or swipe up to lock it hands-free. Recognition is on-device only — server recognition is refused outright, never quietly substituted.' },
@@ -107,7 +107,7 @@ const CAPS = [
              Connected as the phone arrives. -->
         <div class="stage__phone" data-journey-slot>
           <div class="stage__phoneIn" data-journey-phone>
-            <Phone screen="control" />
+            <Phone screen="control" trail />
           </div>
         </div>
       </div>
@@ -151,7 +151,7 @@ const CAPS = [
           <p>
             Open ReMoKey with the Mac app running and your Mac appears — no
             addresses, no setup. iOS asks once for permission to see your local
-            network; that is the whole of it.
+            network; that is all it asks.
           </p>
           <p class="step__aside">
             You can always type an address instead — which is also the answer
@@ -166,7 +166,7 @@ const CAPS = [
           <h3 class="t-lg">Two screens. One code.</h3>
           <p>
             Both devices work out the same four digits independently. You read
-            them off your iPhone, check the Mac agrees, and press Confirm{' '}<em>on the Mac</em>. That comparison is the whole security boundary —
+            them off your iPhone, check the Mac agrees, and press Confirm{' '}<em>on the Mac</em>. That comparison is the entire security boundary —
             there is no password to choose and none to leak.
           </p>
           <p class="step__aside">
@@ -192,7 +192,7 @@ const CAPS = [
             connects, but the Mac quietly ignores everything it sends.
           </p>
           <p class="step__aside">
-            Pair once. After that it connects by itself the moment you open it.
+            Pair once. From then on it connects on its own.
           </p>
         </li>
       </ol>
@@ -281,7 +281,7 @@ const CAPS = [
           <li><strong>No account, no sign-in, no subscription.</strong> Nothing to breach.</li>
           <li><strong>Encrypted, phone to Mac.</strong> The connection is authenticated by the key minted when you paired, held in your iPhone’s Keychain.</li>
           <li><strong>No analytics, no telemetry.</strong> Not reduced — absent.</li>
-          <li><strong>One outbound request, and you can read it.</strong> The Mac app fetches its update file once a day. That is the only thing either app contacts besides the other.</li>
+          <li><strong>One outbound request, and you can read it.</strong> Once a day the Mac app fetches its update file — a public, plain-text feed. That address is the only thing either app ever contacts besides the other.</li>
           <li><strong>Dictation never leaves the phone.</strong> If your language has no on-device model, dictation simply doesn’t run.</li>
         </ul>
         <p>
@@ -332,8 +332,10 @@ const CAPS = [
             <path d="M 447 118 a 26 26 0 0 1 25 -19 a 30 30 0 0 1 29 22 a 21 21 0 0 1 -4 41 h -64 a 22 22 0 0 1 -8 -43 z"
                   fill="none" stroke="var(--text-mute)" stroke-width="1.6"
                   stroke-dasharray="5 6" stroke-linecap="round" />
-            <text x="424" y="196" class="priv__cap priv__cap--mute">The internet</text>
-            <text x="424" y="216" class="priv__cap priv__cap--mute">— not involved</text>
+            {/* "Not involved" contradicted the update-check bullet beside the
+                diagram. Scoped to input, which is what the section claims. */}
+            <text x="410" y="196" class="priv__cap priv__cap--mute">The internet —</text>
+            <text x="410" y="218" class="priv__cap priv__cap--mute">never sees your input</text>
           </g>
         </svg>
       </div>
@@ -396,7 +398,11 @@ const CAPS = [
     .hero__h { font-size: clamp(3.2rem, 1.1rem + 4.9vw, 6rem); }
     .hero__anchor {
       display: block;
-      width: min(100%, 15rem);
+      /* Same width as the landing slot, deliberately: with the sizes equal
+         the flight is translate+rotate only. A scale term was tried and cut —
+         a per-frame near-identity scale left Chromium rasterising the phone's
+         SVG text on a stale glyph raster in the landed pose. */
+      width: min(100%, 13.5rem);
       aspect-ratio: 390 / 844;
       justify-self: center;
     }
@@ -408,12 +414,23 @@ const CAPS = [
     display: grid;
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 2.5rem;
+    gap: 0;
   }
   .stage__mac { position: relative; width: min(100%, 46rem); }
   .stage__macL--ready { position: absolute; inset: 0; opacity: 0; }
   .stage__macL { transition: opacity 0.5s var(--ease); }
-  .stage__phone { position: relative; width: min(56%, 15rem); }
+  /* Narrow screens keep the pair composition too: the phone stands in front
+     of the Mac's lower-left corner instead of stacking below it with a gap —
+     the overlap is the load-bearing move at every width, and half the
+     visitors are on the narrow layout. */
+  .stage__phone {
+    position: relative;
+    width: min(50%, 15rem);
+    justify-self: start;
+    margin-left: 7%;
+    margin-top: -24%;
+    z-index: 2;
+  }
 
   /* The journey's swap: until the phone lands, the Mac is still waiting. */
   .hero.is-journey .stage__macL--ready { opacity: 1; }
@@ -422,16 +439,18 @@ const CAPS = [
   .hero.is-journey.is-landed .stage__macL--connected { opacity: 1; }
 
   /* The traveller. Layout position is the landing position; the opening pose
-     is pure transform, driven by three measured vars and one progress var.
+     is pure transform, driven by two measured vars and one progress var.
      --jp runs 1 (beside the headline) → 0 (landed), already eased by the
-     engine so the flight settles rather than stops. */
+     engine so the flight settles rather than stops — and snapped to exactly 0
+     at the end, so the landed phone renders with an identity transform.
+     Translate and rotate ONLY: a scale term left Chromium rasterising the
+     SVG text on a stale glyph raster (labels drawn at the old scale while
+     the chrome moved), so the anchor and slot are sized equal instead. */
   .stage__phoneIn {
     transform:
       translate(calc(var(--jdx, 0px) * var(--jp, 0)),
                 calc(var(--jdy, 0px) * var(--jp, 0)))
-      rotate(calc(var(--jp, 0) * 6deg))
-      scale(calc(1 + (var(--jsw, 1) - 1) * var(--jp, 0)));
-    will-change: transform;
+      rotate(calc(var(--jp, 0) * 6deg));
   }
 
   /* Side by side and overlapping, only when there is genuinely room. */
@@ -456,8 +475,10 @@ const CAPS = [
       /* Bottom-aligned and overlapping the Mac's lower-left. The phone is
          taller than the Mac's screen and hangs a little below its base, which
          is what makes it read as standing in front rather than sitting inside
-         the composition. */
+         the composition. The margins are the narrow layout's overlap — here
+         the grid does that job, so they reset. */
       width: min(100%, 13.5rem);
+      margin: 0;
       justify-self: end;
       align-self: end;
       z-index: 2;
@@ -569,6 +590,14 @@ const CAPS = [
     }
     /* A little runway so the last step is not flush against the section end. */
     .walk__steps { padding-bottom: 5svh; }
+
+    /* Scriptless desktop mirrors reduced motion, for the same reason: the
+       engine that advances the sticky column is equally dead, so without
+       these a no-JS visitor gets a Mac frozen on "Ready to pair" pinned
+       beside steps 2 and 3, and three empty viewports of step padding. */
+    :global(html:not(.js)) .walk__stick { display: none; }
+    :global(html:not(.js)) .step__art { display: block; width: min(48%, 12rem); }
+    :global(html:not(.js)) .step { min-height: 0; }
   }
 
   /* Without JS nothing ever gets `.is-current`, so dimming would leave every
@@ -727,25 +756,38 @@ const CAPS = [
   .priv__list strong { color: var(--text); font-weight: 600; }
 
   .priv__svg { width: 100%; height: auto; max-width: 30rem; margin-inline: auto; }
+  /* SVG text scales with the viewBox: 15px here renders ~13px at the desktop
+     max-width and would render ~9px at a 375px phone, so narrow viewports get
+     a bigger user-unit size — text in SVG reflows nothing, which makes the
+     media override safe. */
   .priv__cap {
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 15px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     fill: var(--text-dim);
   }
-  .priv__cap--mute { fill: var(--text-mute); letter-spacing: 0.1em; text-transform: none; }
-
-  /* The packet rides the signal path on a loop. Browsers without offset-path
-     leave the circle at its cx/cy, which sits on the path — a still frame of
-     the same story. The global reduced-motion rule freezes it the same way. */
-  .priv__pkt {
-    offset-path: path('M 134 280 C 172 268, 178 216, 214 196');
-    offset-rotate: 0deg;
-    animation: pkt-travel 2.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  .priv__cap--mute { fill: var(--text-mute); letter-spacing: 0.06em; text-transform: none; }
+  @media (max-width: 40rem) {
+    .priv__cap { font-size: 19px; }
   }
+
+  /* The packet rides the signal path on a loop. Everything motion lives
+     inside the @supports gate: with the animation outside it, a browser
+     without offset-path still ran the opacity keyframes and the "static
+     fallback" blinked in place — and @supports tests parsing, not whether
+     the engine applies motion paths to SVG circles, so the cx/cy zeroing
+     stays gated with the animation that needs it. Non-supporting engines get
+     a genuinely still dot at the authored cx/cy, on the path. The global
+     reduced-motion rule freezes the animated case the same way. */
+  .priv__pkt { offset-rotate: 0deg; }
   @supports (offset-path: path('M 0 0 L 1 1')) {
-    .priv__pkt { cx: 0; cy: 0; }
+    .priv__pkt {
+      offset-path: path('M 134 280 C 172 268, 178 216, 214 196');
+      cx: 0;
+      cy: 0;
+      animation: pkt-travel 2.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    }
   }
   @keyframes pkt-travel {
     0% { offset-distance: 0%; opacity: 0; }
@@ -757,7 +799,10 @@ const CAPS = [
 
   /* ───────── Close ───────── */
   .close {
-    padding-block: clamp(4rem, 2rem + 7vw, 9rem);
+    /* Asymmetric on purpose: the section opens with room to breathe, but its
+       bottom half meets the footer's own top margin — symmetric padding
+       stacked into ~16rem of empty paper, the largest void on the page. */
+    padding-block: clamp(4rem, 2rem + 7vw, 9rem) clamp(3rem, 2rem + 3vw, 5rem);
     border-top: 1px solid var(--line);
     text-align: center;
   }
@@ -803,6 +848,11 @@ const CAPS = [
   function start() {
     stop();
     if (reduced.matches) {
+      /* The CSS reduced-motion block forces the phone to its landed pose, but
+         the journey classes survive a mid-visit preference flip — and
+         .is-journey without .is-landed keeps the "Ready to pair" Mac on top.
+         Clear them so the classless default (Connected) matches the pose. */
+      document.querySelector('[data-hero]')?.classList.remove('is-journey', 'is-landed');
       revealAll();
       armed();
       return;
@@ -875,7 +925,6 @@ const CAPS = [
       const s = jSlot.getBoundingClientRect();
       jPhone.style.setProperty('--jdx', `${(a.left + a.width / 2) - (s.left + s.width / 2)}px`);
       jPhone.style.setProperty('--jdy', `${(a.top + a.height / 2) - (s.top + s.height / 2)}px`);
-      jPhone.style.setProperty('--jsw', (a.width / s.width).toFixed(4));
       /* The flight completes as the Mac reaches centre stage. */
       jEndY = Math.max(1, scrollY + s.top + s.height / 2 - innerHeight / 2);
     }
@@ -885,16 +934,16 @@ const CAPS = [
       const p = Math.min(1, Math.max(0, scrollY / jEndY));
       /* Eased here rather than in CSS so the transform is one multiplication:
          (1-p)² keeps full speed leaving the headline and settles into the
-         landing instead of stopping dead. */
-      jPhone.style.setProperty('--jp', ((1 - p) * (1 - p)).toFixed(4));
+         landing instead of stopping dead. Snapped to exactly 0 at the end —
+         the ease approaches zero asymptotically, and a lingering near-identity
+         transform is what left the landed phone's text on a stale raster. */
+      const jp = (1 - p) * (1 - p);
+      jPhone.style.setProperty('--jp', jp < 0.001 ? '0' : jp.toFixed(4));
       hero.classList.toggle('is-landed', p > 0.72);
     }
 
-    /* 4 — Header hairline. */
-    const root = document.documentElement;
-    function syncHeader() {
-      root.classList.toggle('is-stuck', scrollY > 8);
-    }
+    /* The header hairline lives in Header.astro's own script — it is state,
+       not motion, so it must work on every page and under reduced motion. */
 
     let ticking = false;
     function onScroll() {
@@ -903,7 +952,6 @@ const CAPS = [
       requestAnimationFrame(() => {
         syncSteps();
         syncJourney();
-        syncHeader();
         ticking = false;
       });
     }
@@ -917,6 +965,15 @@ const CAPS = [
     addEventListener('resize', onResize, { passive: true, signal });
     measureJourney();
     onScroll();
+    /* The display face usually lands after first layout, and a swapped
+       headline can rewrap — which moves the anchor the journey was measured
+       from. Measure again once fonts settle (no-op if the engine has been
+       torn down in the meantime). */
+    document.fonts?.ready?.then(() => {
+      if (signal.aborted) return;
+      measureJourney();
+      onScroll();
+    });
   }
 
   start();
