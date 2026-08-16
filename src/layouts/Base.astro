@@ -15,6 +15,10 @@ const ogImage = new URL('/og.png', Astro.site ?? SITE_URL);
 // the .doc styles want, so it drives them rather than a hand-set flag that a
 // new page would forget.
 const isDoc = !!frontmatter;
+
+// Must match --bg in global.css for each theme; the inline theme script and the
+// header toggle both keep the meta tag in step so the browser chrome follows.
+const THEME_COLOR = { light: '#f4f1e9', dark: '#111214' };
 ---
 <!doctype html>
 <html lang="en">
@@ -26,9 +30,10 @@ const isDoc = !!frontmatter;
     <link rel="canonical" href={canonical} />
 
     <!-- Paints the browser chrome to match the canvas on iOS and Android, so
-         the page does not sit in a white frame on the devices it is about. -->
-    <meta name="theme-color" content="#08090c" />
-    <meta name="color-scheme" content="dark" />
+         the page does not sit in a mismatched frame on the devices it is
+         about. The inline script below corrects it before first paint when the
+         stored theme is dark. -->
+    <meta name="theme-color" content={THEME_COLOR.light} />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={PRODUCT_NAME} />
@@ -52,8 +57,26 @@ const isDoc = !!frontmatter;
     <!-- Marks scripting as available BEFORE first paint, so the reveal
          animations may start hidden. Without this the CSS would have to
          default to hidden, and a scripting-disabled browser would get a blank
-         page — precisely the failure this class exists to prevent. -->
-    <script is:inline>document.documentElement.classList.add('js');</script>
+         page — precisely the failure this class exists to prevent.
+
+         The same script applies the stored theme. It must run inline in
+         <head>: applied any later, a dark-theme visitor gets a flash of light
+         page on every navigation. The DEFAULT is light for everyone — the
+         system preference is deliberately not consulted, so the only way to
+         get dark is to have chosen it. -->
+    <script is:inline define:vars={{ THEME_COLOR }}>
+      document.documentElement.classList.add('js');
+      try {
+        if (localStorage.getItem('rk-theme') === 'dark') {
+          document.documentElement.dataset.theme = 'dark';
+          document.querySelector('meta[name="theme-color"]')
+            ?.setAttribute('content', THEME_COLOR.dark);
+        }
+      } catch {
+        /* Storage can be denied (private mode, cookie blocking). The site is
+           simply light, which is the default anyway. */
+      }
+    </script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>

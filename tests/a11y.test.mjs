@@ -36,19 +36,52 @@ const over = (fg, bg, alpha) => {
   return '#' + [1, 3, 5].map((i) => mix(i).toString(16).padStart(2, '0')).join('');
 };
 
-const token = (name) => {
-  const m = css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i'));
-  assert.ok(m, `token --${name} not found in global.css`);
-  return m[1];
+/* Two palettes, one file: everything in bare `:root {}` is the light theme
+   (the default), and `:root[data-theme='dark'] {}` overrides part of it. A
+   token the dark block does not redefine is shared, so the dark lookup falls
+   back to light — exactly how the cascade resolves it. */
+const lightBlock = css.match(/\n:root \{([\s\S]*?)\n\}/)?.[1] ?? '';
+const darkBlock = css.match(/\n:root\[data-theme='dark'\] \{([\s\S]*?)\n\}/)?.[1] ?? '';
+assert.ok(lightBlock, ':root block not found in global.css');
+assert.ok(darkBlock, ":root[data-theme='dark'] block not found in global.css");
+
+const tokenIn = (block, name) =>
+  block.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i'))?.[1] ?? null;
+const light = (name) => {
+  const v = tokenIn(lightBlock, name);
+  assert.ok(v, `token --${name} not found in the light palette`);
+  return v;
 };
+const dark = (name) => tokenIn(darkBlock, name) ?? light(name);
+const THEMES = [
+  { label: 'light', token: light },
+  { label: 'dark', token: dark },
+];
 
 test('white text on the primary button clears AA at both ends of the gradient', () => {
-  // --signal alone is 3.31:1 against white, which is why the gradient starts at
-  // --signal-solid instead. Losing that distinction is a silent AA failure on
-  // the most important control on the site.
-  for (const name of ['signal-solid', 'signal-deep']) {
-    const r = ratio(token(name), '#ffffff');
-    assert.ok(r >= 4.5, `white on --${name} (${token(name)}) is ${r.toFixed(2)}:1, needs 4.5:1`);
+  // --signal alone is too weak against white, which is why the gradient starts
+  // at --signal-solid instead. Losing that distinction is a silent AA failure
+  // on the most important control on the site.
+  for (const { label, token } of THEMES) {
+    for (const name of ['signal-solid', 'signal-deep']) {
+      const r = ratio(token(name), '#ffffff');
+      assert.ok(r >= 4.5, `${label}: white on --${name} (${token(name)}) is ${r.toFixed(2)}:1, needs 4.5:1`);
+    }
+  }
+});
+
+test('body text tokens clear AA on the canvas, in both themes', () => {
+  // The whole reason the palette carries two blues: --signal is for art, and
+  // --signal-ink is the one allowed to colour text. If someone tunes a theme's
+  // canvas without re-checking the text tokens, this is what catches it.
+  for (const { label, token } of THEMES) {
+    for (const name of ['text', 'text-dim', 'text-mute', 'signal-ink']) {
+      const r = ratio(token(name), token('bg'));
+      assert.ok(
+        r >= 4.5,
+        `${label}: --${name} (${token(name)}) on --bg (${token('bg')}) is ${r.toFixed(2)}:1, needs 4.5:1`,
+      );
+    }
   }
 });
 
@@ -62,11 +95,14 @@ test('the primary button gradient does not use --signal', () => {
 
 test('the skip link clears AA', () => {
   // 17.76px at weight 600 is below the 18.66px large-text threshold, so this
-  // needs the full 4.5:1 and not 3:1.
+  // needs the full 4.5:1 and not 3:1. The skip link's background token is
+  // shared between themes unless the dark block overrides it, so check both.
   const bg = css.match(/\.skip\s*\{[^}]*background:\s*var\(--([a-z-]+)\)/)?.[1];
   assert.ok(bg, 'could not read the skip link background');
-  const r = ratio(token(bg), '#ffffff');
-  assert.ok(r >= 4.5, `skip link is ${r.toFixed(2)}:1 on --${bg}`);
+  for (const { label, token } of THEMES) {
+    const r = ratio(token(bg), '#ffffff');
+    assert.ok(r >= 4.5, `${label}: skip link is ${r.toFixed(2)}:1 on --${bg}`);
+  }
 });
 
 test('walkthrough steps are never dimmed below AA', () => {
@@ -76,18 +112,20 @@ test('walkthrough steps are never dimmed below AA', () => {
   // is invisible. The current step is marked with a coloured rule instead.
   //
   // If someone reintroduces opacity dimming, this makes them prove it is legible
-  // for the DIMMEST colour in the block, not the brightest.
+  // for the DIMMEST colour in the block, not the brightest — in both themes.
   const block = index.match(/\n    \.step \{([\s\S]*?)\n    \}/)?.[1] ?? '';
   const op = Number(block.match(/opacity:\s*([\d.]+)/)?.[1] ?? 1);
   assert.ok(op > 0, '.step opacity must not be 0');
   if (op === 1) return;
-  for (const name of ['text-dim', 'text-mute']) {
-    const r = ratio(over(token(name), token('void'), op), token('void'));
-    assert.ok(
-      r >= 4.5,
-      `a non-current step renders --${name} at ${r.toFixed(2)}:1 (opacity ${op}); ` +
-      `needs 4.5:1. Mark the current step without lowering the others' contrast.`,
-    );
+  for (const { label, token } of THEMES) {
+    for (const name of ['text-dim', 'text-mute']) {
+      const r = ratio(over(token(name), token('bg'), op), token('bg'));
+      assert.ok(
+        r >= 4.5,
+        `${label}: a non-current step renders --${name} at ${r.toFixed(2)}:1 (opacity ${op}); ` +
+        `needs 4.5:1. Mark the current step without lowering the others' contrast.`,
+      );
+    }
   }
 });
 

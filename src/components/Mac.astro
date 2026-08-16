@@ -1,12 +1,20 @@
 ---
 /**
  * A MacBook rendering the real ReMoKey host UI: the menu-bar mark and the
- * notch HUD card.
+ * notch HUD card — on a desktop that looks like a Mac's, not a placeholder's.
  *
- * The menu-bar mark is redrawn from the deterministic geometry in the app's
- * own icon generator (Scripts/make-app-icons.swift, drawMenuGlyph) — a key cap
- * with Wi-Fi waves rising out of it, in template rendering, which is why it is
- * a flat single colour here rather than the blue app icon.
+ * The realism is the point. The menu bar carries the Apple mark, Finder's
+ * actual menu titles and the status items a Mac really shows; the Dock holds
+ * recognisable (hand-drawn, not Apple's artwork) app icons; the wallpaper is
+ * a macOS-style aurora. Every Apple-drawn asset is approximated from scratch —
+ * nothing is traced or redistributed, and the footer already states the site
+ * is not affiliated with Apple.
+ *
+ * The ReMoKey menu-bar mark is redrawn from the deterministic geometry in the
+ * app's own icon generator (Scripts/make-app-icons.swift, drawMenuGlyph) — a
+ * key cap with Wi-Fi waves rising out of it. It is template-rendered in macOS,
+ * which means it takes the menu bar's foreground colour: near-black on this
+ * light menu bar, exactly as it would on a real desktop with this wallpaper.
  *
  * The HUD silhouette (NotchCardShape.swift) is the distinctive part: concave
  * fillets at the top that flare outward so the screen edge curves *into* the
@@ -20,7 +28,7 @@ const { hud = 'none', waves = 3, label, klass = '' } = Astro.props;
 
 // A per-instance suffix for the <defs> ids. The landing page renders hud
 // "connected" twice — hero and walkthrough — and two elements sharing
-// id="shell-connected" means every url(#shell-connected) in the document
+// id="wall-connected" means every url(#wall-connected) in the document
 // resolves to the FIRST, so the second Mac was painted with the first one's
 // gradients and clipped by its clip path.
 globalThis.__rkMacSeq = (globalThis.__rkMacSeq ?? 0) + 1;
@@ -30,6 +38,10 @@ const VB_W = 1640, VB_H = 1120;
 const SCR_X = 62, SCR_Y = 26, SCR_W = 1516, SCR_H = 968;
 const MENU_H = 38;
 const NOTCH_W = 216, NOTCH_H = 34;
+
+// The menu bar's foreground. macOS derives it from the wallpaper; over this
+// one it is dark, and every status item and the ReMoKey mark inherit it.
+const MB_FG = '#1c1d22';
 
 // Silhouette from NotchCardShape.swift; the 300pt width and the per-card
 // heights are in NotchHUDContent.swift. Top concave fillet 12, bottom radius 18.
@@ -47,6 +59,22 @@ const cardPath = (W, H, rc, rb) => [
   `L ${W} ${rc}`, `A ${rc} ${rc} 0 0 1 ${W + rc} 0`, 'Z',
 ].join(' ');
 
+// Menu titles, Finder frontmost. Real text, not pills — pills were the single
+// loudest "this is not a Mac" tell in the first draft.
+const MENUS = [
+  { t: 'Finder', x: 64, w: 600 },
+  { t: 'File', x: 136 }, { t: 'Edit', x: 186 }, { t: 'View', x: 238 },
+  { t: 'Go', x: 296 }, { t: 'Window', x: 340 }, { t: 'Help', x: 424 },
+];
+
+// Dock: eight hand-drawn stand-ins at 54pt, the size a real Dock defaults to.
+const DOCK_N = 8, DOCK_S = 54, DOCK_GAP = 14, DOCK_PAD = 16;
+const DOCK_W = DOCK_N * DOCK_S + (DOCK_N - 1) * DOCK_GAP + DOCK_PAD * 2;
+const DOCK_H = DOCK_S + 20;
+const DOCK_X = SCR_X + (SCR_W - DOCK_W) / 2;
+const DOCK_Y = SCR_Y + SCR_H - DOCK_H - 12;
+const dockX = (i) => DOCK_X + DOCK_PAD + i * (DOCK_S + DOCK_GAP);
+
 const alt = label ?? {
   none: 'A MacBook with the ReMoKey mark in its menu bar',
   connecting: 'A MacBook showing a Connecting notification below the notch',
@@ -61,55 +89,214 @@ const DEVICE = 'Yanko’s iPhone';
 <div class={`mac ${klass}`}>
   <svg viewBox={`0 0 ${VB_W} ${VB_H}`} role="img" aria-label={alt} class="mac__svg">
     <defs>
-      <linearGradient id={`shell-${uid}`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#3a4049" /><stop offset="1" stop-color="#20242b" />
-      </linearGradient>
-      <linearGradient id={`wall-${uid}`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#0d1a33" />
-        <stop offset=".45" stop-color="#122a52" />
-        <stop offset="1" stop-color="#07101f" />
+      <!-- Silver chassis, not graphite: it is what a MacBook is made of. -->
+      <linearGradient id={`lid-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#eceef2" /><stop offset="1" stop-color="#b7bcc6" />
       </linearGradient>
       <linearGradient id={`base-${uid}`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#454b55" /><stop offset="1" stop-color="#181b21" />
+        <stop offset="0" stop-color="#e7e9ee" />
+        <stop offset=".55" stop-color="#b4bac4" />
+        <stop offset="1" stop-color="#878e9a" />
       </linearGradient>
+
+      <!-- Wallpaper: a macOS-style aurora. Base sweep plus two soft glows —
+           radial gradients, not filters, so six device renders stay cheap. -->
+      <linearGradient id={`wall-${uid}`} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#141c52" />
+        <stop offset=".34" stop-color="#3b2e92" />
+        <stop offset=".62" stop-color="#8f4198" />
+        <stop offset=".85" stop-color="#d05f77" />
+        <stop offset="1" stop-color="#ec8a5c" />
+      </linearGradient>
+      <radialGradient id={`glowa-${uid}`} cx="24%" cy="18%" r="55%">
+        <stop offset="0" stop-color="#54c8ff" stop-opacity=".5" />
+        <stop offset="1" stop-color="#54c8ff" stop-opacity="0" />
+      </radialGradient>
+      <radialGradient id={`glowb-${uid}`} cx="78%" cy="84%" r="60%">
+        <stop offset="0" stop-color="#ffb36b" stop-opacity=".55" />
+        <stop offset="1" stop-color="#ffb36b" stop-opacity="0" />
+      </radialGradient>
+      <linearGradient id={`sheen-${uid}`} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#ffffff" stop-opacity=".09" />
+        <stop offset=".38" stop-color="#ffffff" stop-opacity="0" />
+      </linearGradient>
+
+      <!-- Dock icon gradients -->
+      <linearGradient id={`ic-finder-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#57b6f5" /><stop offset="1" stop-color="#1a7ade" />
+      </linearGradient>
+      <linearGradient id={`ic-msg-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#6ee55c" /><stop offset="1" stop-color="#27b53c" />
+      </linearGradient>
+      <linearGradient id={`ic-mail-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4ba3f5" /><stop offset="1" stop-color="#1668d2" />
+      </linearGradient>
+      <linearGradient id={`ic-music-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fc6076" /><stop offset="1" stop-color="#e2334f" />
+      </linearGradient>
+      <linearGradient id={`ic-set-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#9aa0ab" /><stop offset="1" stop-color="#5d636d" />
+      </linearGradient>
+
       <clipPath id={`scrclip-${uid}`}>
         <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={SCR_H} rx="12" />
       </clipPath>
     </defs>
 
     <!-- Lid -->
-    <rect x="40" y="0" width={VB_W - 80} height={SCR_H + 52} rx="26" fill={`url(#shell-${uid})`} />
+    <rect x="40" y="0" width={VB_W - 80} height={SCR_H + 52} rx="26" fill={`url(#lid-${uid})`} />
     <rect x="52" y="14" width={VB_W - 104} height={SCR_H + 26} rx="18" fill="#0a0c10" />
 
     <g clip-path={`url(#scrclip-${uid})`}>
+      <!-- Desktop -->
       <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={SCR_H} fill={`url(#wall-${uid})`} />
+      <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={SCR_H} fill={`url(#glowa-${uid})`} />
+      <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={SCR_H} fill={`url(#glowb-${uid})`} />
 
-      <!-- Menu bar -->
-      <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={MENU_H} fill="rgba(0,0,0,0.42)" />
-      {[0, 1, 2, 3].map((i) => (
-        <rect x={SCR_X + 74 + i * 92} y={SCR_Y + 15} width={i === 0 ? 46 : 58} height="8"
-              rx="4" fill="rgba(255,255,255,0.34)" />
-      ))}
+      <!-- Menu bar: translucent over the wallpaper, dark foreground -->
+      <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={MENU_H} fill="rgba(250,250,252,0.68)" />
 
-      <!-- The ReMoKey menu-bar mark. Template-rendered in macOS, so it is the
-           menu bar's own foreground colour, never the blue app icon. -->
-      <g transform={`translate(${SCR_X + SCR_W - 244} ${SCR_Y + 5}) scale(28)`}
-         fill="none" stroke="#ffffff" stroke-linecap="round">
-        <g stroke-width="0.05">
-          {waves >= 1 && <path d="M 0.375 0.483 A 0.125 0.125 0 0 1 0.625 0.483" />}
-          {waves >= 2 && <path d="M 0.292 0.483 A 0.208 0.208 0 0 1 0.708 0.483" />}
-          {waves >= 3 && <path d="M 0.208 0.483 A 0.292 0.292 0 0 1 0.792 0.483" />}
+      <g fill={MB_FG}>
+        <!-- The Apple mark, approximated freehand -->
+        <g transform={`translate(${SCR_X + 26} ${SCR_Y + 10.5}) scale(0.9)`}>
+          <path d="M12.4 0c.1 1.1-.3 2.2-1 3-.7.8-1.8 1.4-2.9 1.3-.1-1 .4-2.1 1-2.8.7-.8 1.9-1.4 2.9-1.5Z" />
+          <path d="M16.7 14.6c-.4 1-.6 1.4-1.2 2.3-.8 1.2-1.9 2.8-3.3 2.8-1.2 0-1.6-.8-3.2-.8-1.6 0-2 .8-3.2.8-1.4 0-2.4-1.4-3.2-2.6C.4 13.8-.2 10.5.9 8.7 1.7 7.4 3 6.6 4.4 6.6c1.3 0 2.1.8 3.2.8 1 0 1.7-.8 3.2-.8 1.2 0 2.5.7 3.4 1.8-3 1.6-2.5 5.9.5 6.2Z" />
         </g>
-        <circle cx="0.5" cy="0.483" r="0.022" fill="#ffffff" stroke="none" />
-        <rect x="0.35" y="0.492" width="0.3" height="0.267" rx="0.067"
-              fill="#ffffff" stroke="none" />
+        {MENUS.map((m) => (
+          <text x={SCR_X + m.x} y={SCR_Y + 25} font-family="var(--body)"
+                font-size="15" font-weight={m.w ?? 400} fill={MB_FG}>{m.t}</text>
+        ))}
       </g>
-      {[0, 1].map((i) => (
-        <rect x={SCR_X + SCR_W - 172 + i * 46} y={SCR_Y + 15} width="26" height="8"
-              rx="4" fill="rgba(255,255,255,0.34)" />
-      ))}
-      <rect x={SCR_X + SCR_W - 96} y={SCR_Y + 14} width="62" height="10" rx="5"
-            fill="rgba(255,255,255,0.34)" />
+
+      <!-- Status items, right to left: clock, Control Center, Wi-Fi, battery,
+           and the ReMoKey mark among them where the app really puts it. -->
+      <g fill={MB_FG} stroke="none">
+        <text x={SCR_X + SCR_W - 26} y={SCR_Y + 25} text-anchor="end"
+              font-family="var(--body)" font-size="15" fill={MB_FG}>Sat 16 Aug&#8194;21:42</text>
+
+        <!-- Control Center: the two-pill switchboard -->
+        <g transform={`translate(${SCR_X + SCR_W - 202} ${SCR_Y + 11})`} fill="none"
+           stroke={MB_FG} stroke-width="1.6">
+          <rect x="0" y="0" width="17" height="7.2" rx="3.6" />
+          <circle cx="4.4" cy="3.6" r="1.5" fill={MB_FG} stroke="none" />
+          <rect x="0" y="9.4" width="17" height="7.2" rx="3.6" />
+          <circle cx="12.6" cy="13" r="1.5" fill={MB_FG} stroke="none" />
+        </g>
+
+        <!-- Wi-Fi -->
+        <g transform={`translate(${SCR_X + SCR_W - 244} ${SCR_Y + 11})`} fill="none"
+           stroke={MB_FG} stroke-width="1.9" stroke-linecap="round">
+          <path d="M1 5.4a12.4 12.4 0 0 1 16 0M4 8.9a7.9 7.9 0 0 1 10 0M7 12.4a3.6 3.6 0 0 1 4 0" />
+          <circle cx="9" cy="15" r="1.4" fill={MB_FG} stroke="none" />
+        </g>
+
+        <!-- Battery -->
+        <g transform={`translate(${SCR_X + SCR_W - 298} ${SCR_Y + 12})`}>
+          <rect x="0" y="0" width="30" height="14" rx="4" fill="none" stroke={MB_FG}
+                stroke-opacity=".5" stroke-width="1.4" />
+          <rect x="2.4" y="2.4" width="19" height="9.2" rx="2.2" fill={MB_FG} />
+          <path d="M32 4.6v4.8a2.6 2.6 0 0 1 0-4.8Z" fill={MB_FG} fill-opacity=".5" />
+        </g>
+
+        <!-- The ReMoKey menu-bar mark. Template-rendered in macOS, so it takes
+             the menu bar's own foreground colour — dark here, never the blue
+             app icon. -->
+        <g transform={`translate(${SCR_X + SCR_W - 352} ${SCR_Y + 5}) scale(28)`}
+           fill="none" stroke={MB_FG} stroke-linecap="round">
+          <g stroke-width="0.05">
+            {waves >= 1 && <path d="M 0.375 0.483 A 0.125 0.125 0 0 1 0.625 0.483" />}
+            {waves >= 2 && <path d="M 0.292 0.483 A 0.208 0.208 0 0 1 0.708 0.483" />}
+            {waves >= 3 && <path d="M 0.208 0.483 A 0.292 0.292 0 0 1 0.792 0.483" />}
+          </g>
+          <circle cx="0.5" cy="0.483" r="0.022" fill={MB_FG} stroke="none" />
+          <rect x="0.35" y="0.492" width="0.3" height="0.267" rx="0.067"
+                fill={MB_FG} stroke="none" />
+        </g>
+      </g>
+
+      <!-- Dock -->
+      <g>
+        <rect x={DOCK_X} y={DOCK_Y} width={DOCK_W} height={DOCK_H} rx="20"
+              fill="rgba(250,250,252,0.42)" stroke="rgba(255,255,255,0.35)" stroke-width="1" />
+
+        <!-- Finder -->
+        <g transform={`translate(${dockX(0)} ${DOCK_Y + 10})`}>
+          <rect width={DOCK_S} height={DOCK_S} rx="12" fill={`url(#ic-finder-${uid})`} />
+          <path d={`M ${DOCK_S * 0.54} 0 H 12 A 12 12 0 0 0 0 12 V ${DOCK_S - 12} A 12 12 0 0 0 12 ${DOCK_S} H ${DOCK_S * 0.54} Z`}
+                fill="#dceefb" opacity=".9" />
+          <g stroke="#0f4f9e" stroke-width="2.6" stroke-linecap="round" fill="none">
+            <path d={`M ${DOCK_S * 0.3} 18 v 8 M ${DOCK_S * 0.66} 18 v 8`} />
+            <path d={`M ${DOCK_S * 0.24} 37 q ${DOCK_S * 0.24} 9 ${DOCK_S * 0.5} 0`} />
+          </g>
+          <circle cx={DOCK_S / 2} cy={DOCK_S + 15} r="2.2" fill="rgba(20,20,30,0.55)" />
+        </g>
+
+        <!-- Safari -->
+        <g transform={`translate(${dockX(1)} ${DOCK_Y + 10})`}>
+          <rect width={DOCK_S} height={DOCK_S} rx="12" fill="#f4f7fb" />
+          <circle cx={DOCK_S / 2} cy={DOCK_S / 2} r="21" fill="#3aa7f0" />
+          <circle cx={DOCK_S / 2} cy={DOCK_S / 2} r="21" fill="none" stroke="#1c7cd6" stroke-width="1.4" />
+          <path d={`M ${DOCK_S / 2 + 11} ${DOCK_S / 2 - 11} L ${DOCK_S / 2 + 2.5} ${DOCK_S / 2 - 2.5} L ${DOCK_S / 2 - 11} ${DOCK_S / 2 + 11} L ${DOCK_S / 2 - 2.5} ${DOCK_S / 2 + 2.5} Z`}
+                fill="#ffffff" />
+          <path d={`M ${DOCK_S / 2 + 11} ${DOCK_S / 2 - 11} L ${DOCK_S / 2 + 2.5} ${DOCK_S / 2 - 2.5} L ${DOCK_S / 2 - 2.5} ${DOCK_S / 2 + 2.5} Z`}
+                fill="#f5424e" />
+        </g>
+
+        <!-- Messages -->
+        <g transform={`translate(${dockX(2)} ${DOCK_Y + 10})`}>
+          <rect width={DOCK_S} height={DOCK_S} rx="12" fill={`url(#ic-msg-${uid})`} />
+          <path d={`M ${DOCK_S / 2} 11 c -10.5 0 -19 7 -19 15.6 0 5.5 3.5 10.3 8.8 13 -.3 2.3 -1.6 4.6 -3.6 6.3 3.4 -.4 6.5 -1.8 8.7 -3.7 1.6 .4 3.4 .6 5.1 .6 10.5 0 19 -7 19 -15.6 S ${DOCK_S / 2 + 10.5} 11 ${DOCK_S / 2} 11 Z`}
+                fill="#ffffff" transform={`translate(${-DOCK_S / 2 + 27} 0)`} />
+        </g>
+
+        <!-- Mail -->
+        <g transform={`translate(${dockX(3)} ${DOCK_Y + 10})`}>
+          <rect width={DOCK_S} height={DOCK_S} rx="12" fill={`url(#ic-mail-${uid})`} />
+          <rect x="9" y="15" width={DOCK_S - 18} height={DOCK_S - 30} rx="4" fill="#ffffff" />
+          <path d={`M 10.5 17 L ${DOCK_S / 2} ${DOCK_S / 2 + 2} L ${DOCK_S - 10.5} 17`}
+                fill="none" stroke="#1668d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+
+        <!-- Photos -->
+        <g transform={`translate(${dockX(4)} ${DOCK_Y + 10})`}>
+          <rect width={DOCK_S} height={DOCK_S} rx="12" fill="#fbfbfd" />
+          {['#f6bd4e', '#ef8b46', '#e75d55', '#d8508f', '#9058c9', '#5062d8', '#4a9ce4', '#54bda1']
+            .map((c, i) => (
+              <ellipse cx={DOCK_S / 2} cy={DOCK_S / 2 - 10.5} rx="5.4" ry="10.5" fill={c}
+                       opacity="0.82"
+                       transform={`rotate(${i * 45} ${DOCK_S / 2} ${DOCK_S / 2})`} />
+            ))}
+        </g>
+
+        <!-- Notes -->
+        <g transform={`translate(${dockX(5)} ${DOCK_Y + 10})`}>
+          <rect width={DOCK_S} height={DOCK_S} rx="12" fill="#ffffff" />
+          <path d={`M 0 12 h ${DOCK_S} v -0 a 12 12 0 0 0 -12 -12 h ${-(DOCK_S - 24)} a 12 12 0 0 0 -12 12 Z`}
+                fill="#f7c94b" transform="translate(0 0.2)" />
+          <rect x="0" y="12" width={DOCK_S} height="1.6" fill="#e2b93a" />
+          <g stroke="#c9cbd2" stroke-width="2.4" stroke-linecap="round">
+            <path d={`M 10 24 h ${DOCK_S - 20} M 10 33 h ${DOCK_S - 20} M 10 42 h ${DOCK_S - 30}`} />
+          </g>
+        </g>
+
+        <!-- Music -->
+        <g transform={`translate(${dockX(6)} ${DOCK_Y + 10})`}>
+          <rect width={DOCK_S} height={DOCK_S} rx="12" fill={`url(#ic-music-${uid})`} />
+          <g fill="#ffffff">
+            <path d={`M ${DOCK_S * 0.62} 12 v 20.5 a 5.6 5.6 0 1 1 -2.6 -4.8 V 17 l -12.6 3 v 16.3 a 5.6 5.6 0 1 1 -2.6 -4.8 V 16.2 Z`} />
+          </g>
+        </g>
+
+        <!-- System Settings -->
+        <g transform={`translate(${dockX(7)} ${DOCK_Y + 10})`}>
+          <rect width={DOCK_S} height={DOCK_S} rx="12" fill={`url(#ic-set-${uid})`} />
+          <g transform={`translate(${DOCK_S / 2} ${DOCK_S / 2})`}>
+            <path d="M -3.2 -16.4 h 6.4 l 1 3.7 2.8 1.6 3.6 -1.3 3.2 5.5 -2.9 2.5 v 3.2 l 2.9 2.5 -3.2 5.5 -3.6 -1.3 -2.8 1.6 -1 3.7 h -6.4 l -1 -3.7 -2.8 -1.6 -3.6 1.3 -3.2 -5.5 2.9 -2.5 v -3.2 l -2.9 -2.5 3.2 -5.5 3.6 1.3 2.8 -1.6 Z"
+                  fill="#e8eaef" />
+            <circle r="5.4" fill="#5d636d" />
+          </g>
+        </g>
+      </g>
 
       <!-- Notch -->
       <path d={`M ${SCR_X + SCR_W / 2 - NOTCH_W / 2} ${SCR_Y}
@@ -202,20 +389,18 @@ const DEVICE = 'Yanko’s iPhone';
           </g>
         </g>
       )}
+
+      <!-- Glass sheen, over everything on the panel -->
+      <rect x={SCR_X} y={SCR_Y} width={SCR_W} height={SCR_H} fill={`url(#sheen-${uid})`} />
     </g>
 
     <!-- Base -->
     <path d={`M 8 ${SCR_H + 54} H ${VB_W - 8} l -44 46 H 52 Z`} fill={`url(#base-${uid})`} />
-    <rect x={VB_W / 2 - 92} y={SCR_H + 54} width="184" height="9" rx="4.5" fill="rgba(0,0,0,0.4)" />
+    <rect x={VB_W / 2 - 92} y={SCR_H + 54} width="184" height="9" rx="4.5" fill="rgba(0,0,0,0.25)" />
   </svg>
 </div>
 
-<style>
-  .mac {
-    width: 100%;
-    filter:
-      drop-shadow(0 2px 4px rgb(0 0 0 / 0.45))
-      drop-shadow(0 40px 70px rgb(0 0 0 / 0.5));
-  }
-  .mac__svg { width: 100%; height: auto; }
-</style>
+<!-- .mac / .mac__svg live in global.css, deliberately: a scoped <style> here
+     makes Astro stamp data-astro-cid-* onto every one of the few hundred SVG
+     elements above, times five instances on the landing page — tens of KB of
+     attributes for two rules. -->

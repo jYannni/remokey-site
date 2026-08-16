@@ -263,12 +263,6 @@ const alt = label ?? {
   </svg>
 </div>
 
-<style>
-  .phone {
-    width: 100%;
-    filter:
-      drop-shadow(0 2px 4px rgb(0 0 0 / 0.5))
-      drop-shadow(0 30px 60px rgb(0 0 0 / 0.55));
-  }
-  .phone__svg { width: 100%; height: auto; }
-</style>
+<!-- .phone / .phone__svg live in global.css, deliberately: a scoped <style>
+     here makes Astro stamp data-astro-cid-* onto every SVG element above,
+     times seven instances on the landing page. -->

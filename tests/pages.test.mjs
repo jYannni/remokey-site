@@ -100,9 +100,13 @@ test('privacy page body names the address, not just the footer', () => {
 
 test('landing page leads with what the product is', () => {
   const main = mainOf('index.html');
-  assert.match(main, /trackpad/i, 'the landing page must say what the app actually is');
+  // Tags stripped with '' rather than ' ': "Wi-Fi" sits inside a nowrap span
+  // (so the hyphen cannot become a line break), and the phrase must still
+  // count as contiguous prose.
+  const text = main.replace(/<[^>]+>/g, '');
+  assert.match(text, /trackpad/i, 'the landing page must say what the app actually is');
   assert.match(
-    main, /own Wi-Fi/i,
+    text, /own Wi-Fi/i,
     'the LAN-only story is the differentiator and belongs above the fold',
   );
 });
