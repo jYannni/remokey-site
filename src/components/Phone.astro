@@ -13,8 +13,9 @@
  * and it is the one that belongs on this site.
  *
  * screen: 'control' | 'connect' | 'pair'
+ * trail:  draw a faint gesture arc on the pad (hero only — art, not a claim)
  */
-const { screen = 'control', label, klass = '' } = Astro.props;
+const { screen = 'control', label, klass = '', trail = false } = Astro.props;
 import Glyph from './Glyph.astro';
 
 // A per-instance suffix for the <defs> ids. The landing page renders the
@@ -116,11 +117,39 @@ const alt = label ?? {
     <g clip-path={`url(#scr-${uid})`}>
       <rect x="0" y="0" width={W} height={H} fill={C.screen} />
 
+      {/* iOS status bar. The app does not hide it (no statusBarHidden or
+          persistentSystemOverlays anywhere in Phone/Sources), so a mockup
+          without it reads as a drawing rather than a screenshot. The flanking
+          content is also what gives the Dynamic Island its silhouette. */}
+      <g>
+        <text x="54" y="36" fill={C.text} font-size="17" font-weight="600"
+              font-family="var(--body)" text-anchor="middle"
+              style="font-variant-numeric:tabular-nums">21:42</text>
+        <g fill={C.text}>
+          {[0, 1, 2, 3].map((i) => (
+            <rect x={292 + i * 5.4} y={34 - (4.5 + i * 2.2)} width="3.4"
+                  height={4.5 + i * 2.2} rx="1.2" />
+          ))}
+        </g>
+        <g transform="translate(318 22)" fill="none" stroke={C.text}
+           stroke-width="1.9" stroke-linecap="round">
+          <path d="M1 4.4a10.6 10.6 0 0 1 13.4 0M3.6 7.6a6.6 6.6 0 0 1 8.2 0M6.2 10.7a3 3 0 0 1 3.2 0" />
+          <circle cx="7.9" cy="12.6" r="1.15" fill={C.text} stroke="none" />
+        </g>
+        <g transform="translate(342 23)">
+          <rect x="0" y="0" width="25" height="12.5" rx="4" fill="none"
+                stroke={C.dim} stroke-width="1.1" />
+          <rect x="2" y="2" width="16.5" height="8.5" rx="2.2" fill={C.text} />
+          <path d="M26.5 4.2v4a2.2 2.2 0 0 0 0-4Z" fill={C.dim} />
+        </g>
+      </g>
+
       { screen === 'control' && (
         <g>
           {/* Status row — ContentView.swift:928. Flanks are equal fixed widths
-              so the Mac's name stays optically centred. */}
-          <g transform="translate(0 51)">
+              so the Mac's name stays optically centred. Sits below the iOS
+              status bar, matching the app's safe-area layout. */}
+          <g transform="translate(0 62)">
             <g transform="translate(20 3)" color={C.dim}><Glyph name="lock" size={24} /></g>
             <g transform="translate(133 6)" color={C.text}><Glyph name="mac" size={18} /></g>
             <text x="157" y="20" fill={C.text} font-size="15" font-weight="600"
@@ -131,9 +160,19 @@ const alt = label ?? {
 
           {/* The pad. Blank by default: pointer mode draws no dividers and no
               glyphs, and PadShape carries no stroke, border or shadow —
-              "the pad is meant to look like nothing". */}
+              "the pad is meant to look like nothing". The hero instance alone
+              whispers a gesture arc onto it (`trail`) so the opening frame's
+              focal object is not a featureless slab — it is art in the site's
+              own cursor-trail vocabulary, not a UI claim. */}
           <g transform={`translate(${PAD_X} ${PAD_Y})`}>
             <path d={padPath} fill={C.pad} />
+            { trail && (
+              <g opacity="0.55">
+                <path d="M 52 432 C 140 300, 214 468, 296 322" fill="none"
+                      stroke={C.accent} stroke-width="3.5" stroke-linecap="round" />
+                <circle cx="296" cy="322" r="5.5" fill={C.accent} />
+              </g>
+            )}
           </g>
 
           {/* Expand button, top-trailing of the pad, 44pt target */}
@@ -227,6 +266,11 @@ const alt = label ?? {
 
       { screen === 'pair' && (
         <g>
+          {/* PairingView.swift:70 — a .cancellationAction toolbar item. The
+              real screen has a nav bar; omitting it left the top third empty
+              and unfinished-looking. */}
+          <text x="24" y="78" fill={C.accent} font-size="17"
+                font-family="var(--body)">Cancel</text>
           <text x={W / 2} y="176" fill={C.text} font-size="17" font-weight="600"
                 font-family="var(--body)" text-anchor="middle">Pair with Yanko’s Mac</text>
 
@@ -263,12 +307,6 @@ const alt = label ?? {
   </svg>
 </div>
 
-<style>
-  .phone {
-    width: 100%;
-    filter:
-      drop-shadow(0 2px 4px rgb(0 0 0 / 0.5))
-      drop-shadow(0 30px 60px rgb(0 0 0 / 0.55));
-  }
-  .phone__svg { width: 100%; height: auto; }
-</style>
+<!-- .phone / .phone__svg live in global.css, deliberately: a scoped <style>
+     here makes Astro stamp data-astro-cid-* onto every SVG element above,
+     times seven instances on the landing page. -->

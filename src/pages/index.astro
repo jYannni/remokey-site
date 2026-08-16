@@ -13,13 +13,13 @@ import { MAC_MIN_OS, IOS_MIN_OS } from '../config.mjs';
    Deliberately absent, because the app does not do them: screen mirroring,
    brightness, pinch-to-zoom, and control from outside your own network. */
 const CAPS = [
-  { g: 'dpad', t: 'A real trackpad',
-    d: 'Move, tap to click, double-tap, two-finger tap to right-click, two-finger scroll, and tap-and-a-half to drag.' },
+  { g: 'dpad', t: 'A real trackpad', size: 'feature',
+    d: 'Move, tap to click, double-tap, two-finger tap to right-click, two-finger scroll, and tap-and-a-half to drag. It feels like the glass came off a MacBook.' },
   // NOT "keys repeat when held": SettingsStore.arrowRepeat defaults to
   // .tapOnly, and KeyRepeater is only wired to the arrow pad and to seek.
   // NOT "latch for the next keystroke": SettingsStore.latchMode defaults to
   // .doubleTapLock, not .oneShot.
-  { g: 'keyboard', t: 'The whole keyboard',
+  { g: 'keyboard', t: 'The full keyboard', size: 'wide',
     d: '⌘ ⌃ ⌥ ⇧ arm for the next keystroke, or double-tap one to lock it on. What you type resolves against the Mac’s own layout, and follows it when you switch input source.' },
   { g: 'mic', t: 'Dictation that stays on the phone',
     d: 'Hold to talk, or swipe up to lock it hands-free. Recognition is on-device only — server recognition is refused outright, never quietly substituted.' },
@@ -36,7 +36,7 @@ const CAPS = [
     d: 'The phone names the Mac app that currently has focus, with its icon — so you are never typing blind into whatever happened to be in front.' },
   { g: 'phone', t: 'Several Macs, one phone',
     d: 'Pair as many as you like, rename them, and switch between them. Remove one and it forgets the phone right back.' },
-  { g: 'lock', t: 'Lock it from across the room',
+  { g: 'lock', t: 'Lock it from across the room', size: 'full',
     d: 'Lock the screen outright, or press and hold to reach Restart and Shut Down behind a confirmation.' },
 ];
 ---
@@ -46,44 +46,80 @@ const CAPS = [
   description="Your iPhone becomes a trackpad, keyboard and media remote for your Mac. Over your own Wi-Fi, device to device — no account, no cloud, no screen mirroring."
 >
 
-  <!-- ═══ HERO ═══ -->
-  <section class="hero" data-scrub>
+  <!-- ═══ HERO ═══
+       Two beats. The page opens on the headline with the phone standing beside
+       it; as you scroll, the phone flies down to meet the Mac and the Mac's
+       HUD flips from "Ready to pair" to "Connected" as it lands. The journey
+       IS the pitch — the phone travels, the input arrives.
+
+       The phone's layout position is its FINAL position (in front of the
+       Mac). The opening position is only ever a transform, measured from an
+       empty anchor box beside the headline — so with JS off, with reduced
+       motion, or on a narrow screen, the phone simply stands where it lands
+       and nothing is mispositioned. -->
+  <section class="hero" data-hero>
     <div class="hero__bg" aria-hidden="true"></div>
 
     <div class="wrap hero__in">
-      <p class="label reveal">ReMoKey for iPhone &amp; Mac</p>
+      <div class="hero__grid">
+        <div class="hero__copy">
+          <p class="label reveal">ReMoKey for iPhone &amp; Mac</p>
 
-      <h1 class="t-mega hero__h reveal" style="--reveal-delay:70ms">
-        The Mac’s over there.<br />You’re over <span class="hl">here</span>.
-      </h1>
+          <h1 class="t-mega hero__h reveal" style="--reveal-delay:70ms">
+            Across the room<br />is <span class="hl">close enough</span>.
+          </h1>
 
-      <p class="lede hero__lede reveal" style="--reveal-delay:150ms">
-        ReMoKey closes the gap. Your iPhone becomes your Mac’s trackpad, keyboard
-        and media remote — over your own Wi-Fi, device to device.
-      </p>
+          <p class="lede hero__lede reveal" style="--reveal-delay:150ms">
+            Your iPhone becomes your Mac’s trackpad, keyboard and media
+            remote. Sit back anywhere on your own <span class="nowrap">Wi-Fi</span> —
+            every tap and keystroke lands on the Mac, device to device, with
+            no cloud in between.
+          </p>
 
-      <div class="reveal" style="--reveal-delay:230ms">
-        <StoreCta />
+          <div class="reveal" style="--reveal-delay:230ms">
+            <StoreCta />
+          </div>
+        </div>
+
+        <!-- Where the phone OPENS, not where it lives: an empty box the
+             engine measures. Nothing renders inside it. -->
+        <div class="hero__anchor" aria-hidden="true" data-journey-anchor></div>
       </div>
 
-      <div class="stage reveal" style="--reveal-delay:310ms">
-        <div class="stage__mac"><Mac hud="connected" waves={3} /></div>
+      <div class="stage">
+        <div class="stage__mac">
+          <!-- Two HUD states stacked. "Connected" is the in-flow layer and
+               the default — it is what no-JS, reduced-motion and narrow
+               viewports see. The journey swaps "ready" in until the phone
+               lands. -->
+          <div class="stage__macL stage__macL--ready" aria-hidden="true">
+            <Mac hud="ready" waves={0} />
+          </div>
+          <div class="stage__macL stage__macL--connected">
+            <Mac hud="connected" waves={3} />
+          </div>
+        </div>
 
         <!-- No connecting line and no radiating arcs between the two devices.
              Both were tried; both read as damage rather than signal, because
              any mark drawn in the overlap lands on the Mac's bezel. The pairing
-             is said instead by the composition (the phone stands in front of
-             the Mac) and by the Mac's own HUD, which is showing Connected. -->
-        <div class="stage__phone"><Phone screen="control" /></div>
+             is said by the journey itself, and by the Mac's HUD flipping to
+             Connected as the phone arrives. -->
+        <div class="stage__phone" data-journey-slot>
+          <div class="stage__phoneIn" data-journey-phone>
+            <Phone screen="control" trail />
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ═══ THE WALKTHROUGH ═══
        A sticky device beside three steps. Each step swaps the screen as it
-       reaches the middle of the viewport. IntersectionObserver rather than a
-       scrubbed timeline: it needs no per-frame work, it cannot desynchronise,
-       and with no JS all three steps simply read as prose. -->
+       reaches the middle of the viewport — nearest-midpoint wins, measured in
+       the same rAF-coalesced scroll handler as everything else, so scrolling
+       in either direction stays stable, and with no JS all three steps simply
+       read as prose. -->
   <section class="walk" id="how" aria-labelledby="how-h">
     <div class="wrap">
       <header class="walk__head reveal">
@@ -116,7 +152,7 @@ const CAPS = [
           <p>
             Open ReMoKey with the Mac app running and your Mac appears — no
             addresses, no setup. iOS asks once for permission to see your local
-            network; that is the whole of it.
+            network; that is all it asks.
           </p>
           <p class="step__aside">
             You can always type an address instead — which is also the answer
@@ -131,7 +167,7 @@ const CAPS = [
           <h3 class="t-lg">Two screens. One code.</h3>
           <p>
             Both devices work out the same four digits independently. You read
-            them off your iPhone, check the Mac agrees, and press Confirm{' '}<em>on the Mac</em>. That comparison is the whole security boundary —
+            them off your iPhone, check the Mac agrees, and press Confirm{' '}<em>on the Mac</em>. That comparison is the entire security boundary —
             there is no password to choose and none to leak.
           </p>
           <p class="step__aside">
@@ -157,27 +193,68 @@ const CAPS = [
             connects, but the Mac quietly ignores everything it sends.
           </p>
           <p class="step__aside">
-            Pair once. After that it connects by itself the moment you open it.
+            Pair once. From then on it connects on its own.
           </p>
         </li>
       </ol>
     </div>
   </section>
 
-  <!-- ═══ CAPABILITIES ═══ -->
+  <!-- ═══ CAPABILITIES ═══
+       A bento, not a uniform grid: the trackpad is the product and earns the
+       big cell with an illustration; the keyboard rides beside it; the rest
+       hold a steady rhythm underneath. -->
   <section class="caps" aria-labelledby="caps-h">
     <div class="wrap">
       <header class="caps__head reveal">
         <p class="label">What it does</p>
-        <h2 class="t-xl" id="caps-h">Everything.<br />From the sofa.</h2>
+        <h2 class="t-xl" id="caps-h">The whole Mac,<br />under one thumb.</h2>
       </header>
 
-      <ul class="caps__grid" role="list">
+      <ul class="bento" role="list">
         {CAPS.map((c, i) => (
-          <li class="cap reveal" style={`--reveal-delay:${i * 60}ms`}>
-            <span class="cap__g" aria-hidden="true"><Glyph name={c.g} size={22} /></span>
-            <h3 class="cap__t">{c.t}</h3>
-            <p class="cap__d">{c.d}</p>
+          <li class:list={['bcard', 'reveal', c.size && `bcard--${c.size}`]}
+              style={`--reveal-delay:${(i % 3) * 70}ms`}>
+            { c.size === 'feature' && (
+              <svg class="bcard__art" viewBox="0 0 340 176" aria-hidden="true">
+                <rect x="16" y="14" width="230" height="148" rx="14"
+                      fill="var(--well)" stroke="var(--line)" />
+                <path d="M 58 118 C 104 52, 172 122, 216 62" fill="none"
+                      stroke="var(--signal)" stroke-width="2.5" stroke-linecap="round" />
+                <circle cx="216" cy="62" r="4" fill="var(--signal)" />
+                <circle cx="216" cy="62" r="11" fill="none" stroke="var(--signal)"
+                        stroke-opacity=".45" />
+                <circle cx="216" cy="62" r="19" fill="none" stroke="var(--signal)"
+                        stroke-opacity=".18" />
+                {[0, 1, 2, 3].map((i) => (
+                  <circle cx={49 + i * 55} cy="140" r="12"
+                          fill={i === 0 ? 'var(--signal-solid)' : 'var(--line)'} />
+                ))}
+                <rect x="258" y="14" width="66" height="70" rx="10"
+                      fill="var(--well)" stroke="var(--line)" />
+                <rect x="258" y="92" width="66" height="70" rx="10"
+                      fill="var(--well)" stroke="var(--line)" />
+              </svg>
+            )}
+            { c.size === 'wide' && (
+              <svg class="bcard__art bcard__art--keys" viewBox="0 0 300 84" aria-hidden="true">
+                {['⌘', '⌃', '⌥', '⇧'].map((k, i) => (
+                  <g transform={`translate(${8 + i * 74} 8)`}>
+                    <rect width="64" height="60" rx="12"
+                          fill={i === 0 ? 'var(--signal-haze)' : 'var(--well)'}
+                          stroke={i === 0 ? 'var(--signal-edge)' : 'var(--line)'} />
+                    <text x="32" y="40" text-anchor="middle" font-size="26"
+                          font-weight="600" font-family="var(--body)"
+                          fill={i === 0 ? 'var(--signal-ink)' : 'var(--text-dim)'}>{k}</text>
+                  </g>
+                ))}
+              </svg>
+            )}
+            { (!c.size || c.size === 'full') && (
+              <span class="bcard__g" aria-hidden="true"><Glyph name={c.g} size={22} /></span>
+            )}
+            <h3 class="bcard__t">{c.t}</h3>
+            <p class="bcard__d">{c.d}</p>
           </li>
         ))}
       </ul>
@@ -205,7 +282,7 @@ const CAPS = [
           <li><strong>No account, no sign-in, no subscription.</strong> Nothing to breach.</li>
           <li><strong>Encrypted, phone to Mac.</strong> The connection is authenticated by the key minted when you paired, held in your iPhone’s Keychain.</li>
           <li><strong>No analytics, no telemetry.</strong> Not reduced — absent.</li>
-          <li><strong>One outbound request, and you can read it.</strong> The Mac app fetches its update file once a day. That is the only thing either app contacts besides the other.</li>
+          <li><strong>One outbound request, and you can read it.</strong> Once a day the Mac app fetches its update feed — public, plain text, at updates.remokey.app. That is the only address either app ever contacts besides the other.</li>
           <li><strong>Dictation never leaves the phone.</strong> If your language has no on-device model, dictation simply doesn’t run.</li>
         </ul>
         <p>
@@ -214,31 +291,61 @@ const CAPS = [
         </p>
       </div>
 
+      <!-- The diagram states the section's claim: the signal crosses your
+           Wi-Fi and stops at the Mac. The internet is drawn — because leaving
+           it out would dodge the question — and nothing reaches it. -->
       <div class="priv__art reveal" style="--reveal-delay:120ms" aria-hidden="true">
-        <svg viewBox="0 0 320 300" class="priv__svg" aria-hidden="true">
-          <defs>
-            <radialGradient id="pg" cx="50%" cy="50%">
-              <stop offset="0" stop-color="var(--signal)" stop-opacity=".2" />
-              <stop offset="1" stop-color="var(--signal)" stop-opacity="0" />
-            </radialGradient>
-          </defs>
-          <circle cx="160" cy="150" r="140" fill="url(#pg)" />
-          <circle cx="160" cy="150" r="112" fill="none" stroke="var(--line-lit)"
-                  stroke-width="1" stroke-dasharray="3 7" />
-          <text x="160" y="30" text-anchor="middle" class="priv__cap">your Wi-Fi</text>
+        {/* 584 wide, not 560: the svg root clips at the viewBox edge, and the
+            cloud caption at its enlarged narrow-viewport size needs the
+            margin — measured, not eyeballed. */}
+        <svg viewBox="0 0 584 420" class="priv__svg" aria-hidden="true">
+          <!-- Your network: the boundary everything happens inside -->
+          <rect x="22" y="46" width="356" height="340" rx="44"
+                fill="var(--signal-haze)" stroke="var(--line-lit)"
+                stroke-dasharray="1 7" stroke-width="1.6" stroke-linecap="round" />
+          <text x="52" y="32" class="priv__cap">Your Wi-Fi</text>
 
-          <g class="priv__node" transform="translate(48 178)">
-            <rect x="0" y="0" width="42" height="72" rx="9" fill="var(--slate)" stroke="var(--line-lit)" />
-            <rect x="12" y="8" width="18" height="3" rx="1.5" fill="var(--text-mute)" />
-          </g>
-          <g class="priv__node" transform="translate(196 112)">
-            <rect x="0" y="0" width="86" height="56" rx="6" fill="var(--slate)" stroke="var(--line-lit)" />
-            <rect x="30" y="60" width="26" height="4" rx="2" fill="var(--line-lit)" />
+          <!-- The iPhone -->
+          <g transform="translate(72 236)">
+            <rect x="0" y="0" width="62" height="122" rx="13" fill="var(--card)"
+                  stroke="var(--line-lit)" stroke-width="1.5" />
+            <rect x="19" y="8" width="24" height="7" rx="3.5" fill="var(--line-lit)" />
+            <rect x="8" y="24" width="46" height="76" rx="6" fill="var(--well)" />
+            <rect x="22" y="110" width="18" height="3.5" rx="1.75" fill="var(--line-lit)" />
           </g>
 
-          <path d="M96 200 C 130 196, 160 160, 194 142" fill="none" stroke="var(--signal)"
-                stroke-width="2" stroke-linecap="round" />
-          <circle cx="145" cy="170" r="4" fill="var(--signal)" />
+          <!-- The Mac -->
+          <g transform="translate(196 128)">
+            <rect x="0" y="0" width="150" height="96" rx="8" fill="var(--card)"
+                  stroke="var(--line-lit)" stroke-width="1.5" />
+            <rect x="7" y="7" width="136" height="82" rx="4" fill="var(--well)" />
+            <rect x="7" y="7" width="136" height="9" rx="3" fill="var(--line)" />
+            <path d="M 55 96 h 40 l 8 12 h -56 Z" fill="var(--line-lit)" />
+          </g>
+
+          <!-- The signal: phone to Mac, and no further. -->
+          <path id="privPath" d="M 134 280 C 172 268, 178 216, 214 196" fill="none"
+                stroke="var(--signal)" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M 206 202 l 9 -6.5 -11 -2.5" fill="none" stroke="var(--signal)"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          {/* cx/cy sit ON the Bezier (its ~40% point), because they are the
+              static fallback for engines without offset-path. */}
+          <circle class="priv__pkt" cx="168" cy="251" r="4.5" fill="var(--signal)" />
+
+          <!-- The internet, present and unreached. The gap between the
+               boundary and the cloud is the whole argument. -->
+          <g class="priv__net">
+            <path d="M 447 118 a 26 26 0 0 1 25 -19 a 30 30 0 0 1 29 22 a 21 21 0 0 1 -4 41 h -64 a 22 22 0 0 1 -8 -43 z"
+                  fill="none" stroke="var(--text-mute)" stroke-width="1.6"
+                  stroke-dasharray="5 6" stroke-linecap="round" />
+            {/* "Not involved" contradicted the update-check bullet beside the
+                diagram. Scoped to input, which is what the section claims.
+                Centred under the cloud and kept short: the svg root clips at
+                the 560-unit viewBox edge, and a longer left-anchored line
+                lost its final word — checked at both caption sizes. */}
+            <text x="470" y="196" text-anchor="middle" class="priv__cap priv__cap--mute">The internet</text>
+            <text x="470" y="218" text-anchor="middle" class="priv__cap priv__cap--mute">gets none of it</text>
+          </g>
         </svg>
       </div>
     </div>
@@ -264,23 +371,51 @@ const CAPS = [
   /* ───────── Hero ───────── */
   .hero {
     position: relative;
-    padding-block: clamp(3rem, 1.5rem + 8vw, 8rem) clamp(4rem, 2rem + 7vw, 8rem);
+    padding-block: clamp(3rem, 1.5rem + 7vw, 7rem) clamp(4rem, 2rem + 7vw, 8rem);
     overflow: hidden;
   }
-  /* Atmosphere, not decoration: a single haze anchored where the signal
-     originates, so the eye starts at the phone. */
+  /* Atmosphere: dawn warmth where the phone opens, signal cool where it
+     lands. The two glows sketch the journey before the phone makes it. */
   .hero__bg {
     position: absolute;
     inset: -20% -10% auto;
     height: 120%;
     background:
-      radial-gradient(58% 46% at 22% 62%, var(--signal-haze), transparent 70%),
-      radial-gradient(46% 40% at 82% 18%, rgb(28 79 208 / 0.16), transparent 72%);
+      radial-gradient(46% 40% at 80% 14%, var(--dawn), transparent 70%),
+      radial-gradient(56% 46% at 24% 66%, var(--signal-haze), transparent 72%);
     pointer-events: none;
   }
   .hero__in { position: relative; }
+  .nowrap { white-space: nowrap; }
+
+  .hero__grid { display: grid; }
   .hero__h { margin-bottom: 1.5rem; max-width: 60rem; }
   .hero__lede { margin-bottom: 2rem; }
+
+  /* The anchor only exists where the journey runs. */
+  .hero__anchor { display: none; }
+
+  @media (min-width: 62rem) {
+    .hero__grid {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+      align-items: center;
+      gap: 2rem;
+    }
+    /* t-mega is sized for a full-width headline. Beside the phone column it
+       wraps to four lines and shoves the CTA below the fold, so the hero
+       carries its own cap while the grid is split. */
+    .hero__h { font-size: clamp(3.2rem, 1.1rem + 4.9vw, 6rem); }
+    .hero__anchor {
+      display: block;
+      /* Same width as the landing slot, deliberately: with the sizes equal
+         the flight is translate+rotate only. A scale term was tried and cut —
+         a per-frame near-identity scale left Chromium rasterising the phone's
+         SVG text on a stale glyph raster in the landed pose. */
+      width: min(100%, 13.5rem);
+      aspect-ratio: 390 / 844;
+      justify-self: center;
+    }
+  }
 
   .stage {
     position: relative;
@@ -288,10 +423,44 @@ const CAPS = [
     display: grid;
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 2.5rem;
+    gap: 0;
   }
-  .stage__mac { width: min(100%, 46rem); }
-  .stage__phone { position: relative; width: min(56%, 15rem); }
+  .stage__mac { position: relative; width: min(100%, 46rem); }
+  .stage__macL--ready { position: absolute; inset: 0; opacity: 0; }
+  .stage__macL { transition: opacity 0.5s var(--ease); }
+  /* Narrow screens keep the pair composition too: the phone stands in front
+     of the Mac's lower-left corner instead of stacking below it with a gap —
+     the overlap is the load-bearing move at every width, and half the
+     visitors are on the narrow layout. */
+  .stage__phone {
+    position: relative;
+    width: min(50%, 15rem);
+    justify-self: start;
+    margin-left: 7%;
+    margin-top: -24%;
+    z-index: 2;
+  }
+
+  /* The journey's swap: until the phone lands, the Mac is still waiting. */
+  .hero.is-journey .stage__macL--ready { opacity: 1; }
+  .hero.is-journey .stage__macL--connected { opacity: 0; }
+  .hero.is-journey.is-landed .stage__macL--ready { opacity: 0; }
+  .hero.is-journey.is-landed .stage__macL--connected { opacity: 1; }
+
+  /* The traveller. Layout position is the landing position; the opening pose
+     is pure transform, driven by two measured vars and one progress var.
+     --jp runs 1 (beside the headline) → 0 (landed), already eased by the
+     engine so the flight settles rather than stops — and snapped to exactly 0
+     at the end, so the landed phone renders with an identity transform.
+     Translate and rotate ONLY: a scale term left Chromium rasterising the
+     SVG text on a stale glyph raster (labels drawn at the old scale while
+     the chrome moved), so the anchor and slot are sized equal instead. */
+  .stage__phoneIn {
+    transform:
+      translate(calc(var(--jdx, 0px) * var(--jp, 0)),
+                calc(var(--jdy, 0px) * var(--jp, 0)))
+      rotate(calc(var(--jp, 0) * 6deg));
+  }
 
   /* Side by side and overlapping, only when there is genuinely room. */
   @media (min-width: 62rem) {
@@ -305,25 +474,23 @@ const CAPS = [
        not announced before the thing it controls, and auto-placement will not
        walk backwards into an earlier column — without a row the phone lands on
        row 2 and the two devices stack.
-       The columns deliberately overlap: the phone sitting in front of the Mac
-       says "these two are a pair" far more directly than a gap and a line
+       The columns deliberately overlap: the phone standing in front of the
+       Mac says "these two are a pair" far more directly than a gap and a line
        between them, and it cannot fall out of alignment. */
     .stage__mac   { grid-column: 4 / -1; grid-row: 1; width: 100%; align-self: start; }
     .stage__phone {
       grid-column: 1 / 5;
       grid-row: 1;
-      /* Bottom-aligned and overlapping the Mac's lower-left, so the two read
-         as a pair. The phone is taller than the Mac's screen and hangs a little
-         below its base, which is what makes it read as standing in front
-         rather than sitting inside the composition. */
+      /* Bottom-aligned and overlapping the Mac's lower-left. The phone is
+         taller than the Mac's screen and hangs a little below its base, which
+         is what makes it read as standing in front rather than sitting inside
+         the composition. The margins are the narrow layout's overlap — here
+         the grid does that job, so they reset. */
       width: min(100%, 13.5rem);
+      margin: 0;
       justify-self: end;
       align-self: end;
       z-index: 2;
-      /* The one piece of scrubbed motion in the hero: the phone lifts a little
-         as the section crosses the viewport, so the two devices separate in
-         depth on scroll. Small on purpose — 22px over the whole hero. */
-      transform: translateY(calc((1 - var(--p, 1)) * 22px));
     }
   }
 
@@ -352,7 +519,7 @@ const CAPS = [
   .step .label::before {
     transition: width 0.4s var(--ease), background-color 0.4s var(--ease);
   }
-  .step.is-current .label::before { width: 3.2rem; background: var(--signal); }
+  .step.is-current .label::before { width: 3.2rem; background: var(--signal-solid); }
   .step.is-current .label { color: var(--text-dim); }
   .step p { color: var(--text-dim); }
   .step__aside {
@@ -432,70 +599,127 @@ const CAPS = [
     }
     /* A little runway so the last step is not flush against the section end. */
     .walk__steps { padding-bottom: 5svh; }
+
+    /* Scriptless desktop mirrors reduced motion, for the same reason: the
+       engine that advances the sticky column is equally dead, so without
+       these a no-JS visitor gets a Mac frozen on "Ready to pair" pinned
+       beside steps 2 and 3, and three empty viewports of step padding. */
+    :global(html:not(.js)) .walk__stick { display: none; }
+    :global(html:not(.js)) .step__art { display: block; width: min(48%, 12rem); }
+    :global(html:not(.js)) .step { min-height: 0; }
   }
 
   /* Without JS nothing ever gets `.is-current`, so dimming would leave every
      step dimmed permanently — and it is the whole page's content. */
   :global(html:not(.js)) .step { opacity: 1; }
 
+  /* With no JS the anchor is empty air reserving a grid column — collapse it
+     and let the headline breathe across the full width. */
+  :global(html:not(.js)) .hero__anchor { display: none; }
+  @media (min-width: 62rem) {
+    :global(html:not(.js)) .hero__grid { grid-template-columns: 1fr; }
+  }
+
   /* Reduced motion takes the same route as no-JS, for the same reason: the
      engine that advances the sticky column never runs, so the column would sit
      on step 1's art for all three steps — a Mac saying "Ready to pair" next to
      the paragraph about using the trackpad. The inline art cannot be wrong,
-     because each copy belongs to its own step. */
+     because each copy belongs to its own step. The hero journey never starts
+     either: the phone stands landed beside its Mac, which is the finished
+     state, and the anchor collapses.
+
+     KEEP `.walk__stick`, `.step__art` and `.step` in this block — the a11y
+     suite pins them. */
   @media (prefers-reduced-motion: reduce) {
     .walk__stick { display: none !important; }
     .step__art { display: block !important; width: min(48%, 12rem); }
     .step { min-height: 0 !important; }
+    .hero__anchor { display: none !important; }
+    .hero__grid { grid-template-columns: 1fr !important; }
+    .stage__phoneIn { transform: none !important; }
   }
 
   /* With no JS every layer is visible, and stacking them would be a pile of
      overlapping phones. Show only the first and let the prose carry it. */
   :global(html:not(.js)) .walk__layer:not(.is-on) { display: none; }
 
-  /* ───────── Capabilities ───────── */
+  /* ───────── Capabilities (bento) ───────── */
   .caps { padding-block: clamp(2.5rem, 1rem + 4vw, 5rem) clamp(4rem, 2rem + 7vw, 9rem); }
   .caps__head { max-width: 44rem; margin-bottom: clamp(2rem, 1rem + 4vw, 3.5rem); }
 
-  /* Fixed column counts, not auto-fit. The grid paints its hairlines by
-     showing its own background through 1px gaps, so any column count that does
-     not divide the six cards leaves the leftover track as a large lighter
-     block. 1 / 2 / 3 all divide six exactly. */
-  .caps__grid {
+  .bento {
     list-style: none;
     margin: 0 0 2.5rem;
     padding: 0;
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1px;
-    background: var(--line);
+    gap: 1rem;
+  }
+  /* The spans are chosen so every row of the grid is full at every breakpoint
+     — a bento with a hole in it reads as a bug, not a layout. 2-col: 2+2,
+     then six singles, then the full-width closer. 6-col: 4+2, then two rows
+     of three, then the closer. */
+  @media (min-width: 38rem) {
+    .bento { grid-template-columns: repeat(2, 1fr); }
+    .bcard--feature, .bcard--wide, .bcard--full { grid-column: span 2; }
+  }
+  @media (min-width: 64rem) {
+    .bento { grid-template-columns: repeat(6, 1fr); }
+    .bcard { grid-column: span 2; }
+    .bcard--feature { grid-column: span 4; }
+    .bcard--wide { grid-column: span 2; }
+    .bcard--full { grid-column: 1 / -1; }
+  }
+
+  /* The keyboard card shares a row with the tall feature card; centring its
+     art in the slack keeps it composed instead of top-heavy. */
+  .bcard--wide { display: flex; flex-direction: column; }
+  .bcard--wide .bcard__art--keys { margin-block: auto; }
+
+  /* The closer reads sideways: chip, then copy. */
+  @media (min-width: 38rem) {
+    .bcard--full {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 1.25rem;
+      align-items: start;
+    }
+    .bcard--full .bcard__g { margin-bottom: 0; grid-row: 1 / 3; }
+    .bcard--full .bcard__d { max-width: 46rem; }
+  }
+
+  .bcard {
+    background: var(--card);
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
-    overflow: hidden;
-  }
-  @media (min-width: 38rem) { .caps__grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 64rem) { .caps__grid { grid-template-columns: repeat(3, 1fr); } }
-  .cap {
-    background: var(--graphite);
     padding: clamp(1.4rem, 1rem + 1.2vw, 2rem);
-    transition: background-color 0.3s var(--ease);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.3s var(--ease), border-color 0.3s var(--ease);
   }
-  .cap:hover { background: var(--slate); }
-  .cap__g {
+  .bcard:hover { transform: translateY(-2px); border-color: var(--line-lit); }
+
+  .bcard__art {
+    width: 100%;
+    height: auto;
+    margin-bottom: 1.1rem;
+  }
+  .bcard__art--keys { max-width: 19rem; }
+
+  .bcard__g {
     display: grid;
     place-items: center;
     width: 40px; height: 40px;
     border-radius: 11px;
     background: var(--signal-haze);
-    color: var(--signal);
+    color: var(--signal-ink);
     margin-bottom: 1rem;
   }
-  .cap__t {
+  .bcard__t {
     font-size: var(--t-md);
     letter-spacing: -0.02em;
     margin-bottom: 0.45rem;
   }
-  .cap__d { color: var(--text-dim); font-size: var(--t-sm); margin: 0; }
+  .bcard__d { color: var(--text-dim); font-size: var(--t-sm); margin: 0; }
 
   .caps__not {
     color: var(--text-mute);
@@ -509,7 +733,7 @@ const CAPS = [
     padding-block: clamp(4rem, 2rem + 7vw, 9rem);
     border-top: 1px solid var(--line);
     background:
-      radial-gradient(60% 50% at 78% 40%, rgb(28 79 208 / 0.1), transparent 70%);
+      radial-gradient(60% 50% at 78% 40%, var(--signal-haze), transparent 70%);
   }
   .priv__in { display: grid; gap: clamp(2.5rem, 1rem + 5vw, 4rem); align-items: center; }
   @media (min-width: 60rem) {
@@ -536,22 +760,58 @@ const CAPS = [
     left: 0; top: 0.55em;
     width: 7px; height: 7px;
     border-radius: 50%;
-    background: var(--signal);
+    background: var(--signal-solid);
   }
   .priv__list strong { color: var(--text); font-weight: 600; }
 
-  .priv__svg { width: 100%; height: auto; max-width: 26rem; margin-inline: auto; }
+  .priv__svg { width: 100%; height: auto; max-width: 30rem; margin-inline: auto; }
+  /* SVG text scales with the viewBox: 15px here renders ~13px at the desktop
+     max-width and would render ~9px at a 375px phone, so narrow viewports get
+     a bigger user-unit size — text in SVG reflows nothing, which makes the
+     media override safe. */
   .priv__cap {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 15px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    fill: var(--text-mute);
+    fill: var(--text-dim);
+  }
+  .priv__cap--mute { fill: var(--text-mute); letter-spacing: 0.06em; text-transform: none; }
+  @media (max-width: 40rem) {
+    .priv__cap { font-size: 19px; }
+  }
+
+  /* The packet rides the signal path on a loop. Everything motion lives
+     inside the @supports gate: with the animation outside it, a browser
+     without offset-path still ran the opacity keyframes and the "static
+     fallback" blinked in place — and @supports tests parsing, not whether
+     the engine applies motion paths to SVG circles, so the cx/cy zeroing
+     stays gated with the animation that needs it. Non-supporting engines get
+     a genuinely still dot at the authored cx/cy, on the path. The global
+     reduced-motion rule freezes the animated case the same way. */
+  .priv__pkt { offset-rotate: 0deg; }
+  @supports (offset-path: path('M 0 0 L 1 1')) {
+    .priv__pkt {
+      offset-path: path('M 134 280 C 172 268, 178 216, 214 196');
+      cx: 0;
+      cy: 0;
+      animation: pkt-travel 2.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    }
+  }
+  @keyframes pkt-travel {
+    0% { offset-distance: 0%; opacity: 0; }
+    12% { opacity: 1; }
+    82% { opacity: 1; }
+    96% { offset-distance: 100%; opacity: 0; }
+    100% { offset-distance: 100%; opacity: 0; }
   }
 
   /* ───────── Close ───────── */
   .close {
-    padding-block: clamp(4rem, 2rem + 7vw, 9rem);
+    /* Asymmetric on purpose: the section opens with room to breathe, but its
+       bottom half meets the footer's own top margin — symmetric padding
+       stacked into ~16rem of empty paper, the largest void on the page. */
+    padding-block: clamp(4rem, 2rem + 7vw, 9rem) clamp(3rem, 2rem + 3vw, 5rem);
     border-top: 1px solid var(--line);
     text-align: center;
   }
@@ -568,7 +828,7 @@ const CAPS = [
 
 <script>
   /* ═════ The whole motion layer ═════
-     Two observers and one rAF-coalesced scroll handler. No dependencies.
+     One observer and one rAF-coalesced scroll handler. No dependencies.
 
      Bails out entirely under prefers-reduced-motion: the listeners are never
      attached and every element is left in its finished state, so the page is a
@@ -597,6 +857,11 @@ const CAPS = [
   function start() {
     stop();
     if (reduced.matches) {
+      /* The CSS reduced-motion block forces the phone to its landed pose, but
+         the journey classes survive a mid-visit preference flip — and
+         .is-journey without .is-landed keeps the "Ready to pair" Mac on top.
+         Clear them so the classless default (Connected) matches the pose. */
+      document.querySelector('[data-hero]')?.classList.remove('is-journey', 'is-landed');
       revealAll();
       armed();
       return;
@@ -643,24 +908,51 @@ const CAPS = [
       macLayers.forEach((l) => l.classList.toggle('is-on', +l.dataset.maclayer === best));
     }
 
-    /* 3 — Scrubbed sections. Writes --p (0→1) as the section crosses the
-       viewport. One property per section per frame; everything else is CSS. */
-    const scrubs = [...document.querySelectorAll('[data-scrub]')];
+    /* 3 — The hero journey. The phone opens beside the headline and lands in
+       front of the Mac; both poses are measured, so the flight follows the
+       real layout at every viewport rather than a hand-tuned guess. The
+       opening pose is a transform away from the LANDED layout position, which
+       is why nothing here has to run for the finished state to be correct. */
+    const hero = document.querySelector('[data-hero]');
+    const jSlot = document.querySelector('[data-journey-slot]');
+    const jPhone = document.querySelector('[data-journey-phone]');
+    const jAnchor = document.querySelector('[data-journey-anchor]');
+    const wide = matchMedia('(min-width: 62rem)');
+    let jEndY = 0;
 
-    function syncScrub() {
-      for (const el of scrubs) {
-        const r = el.getBoundingClientRect();
-        const span = r.height + innerHeight;
-        const p = span > 0 ? (innerHeight - r.top) / span : 1;
-        el.style.setProperty('--p', Math.min(1, Math.max(0, p)).toFixed(4));
+    function measureJourney() {
+      if (!hero || !jSlot || !jPhone || !jAnchor) return;
+      if (!wide.matches) {
+        hero.classList.remove('is-journey');
+        jPhone.style.setProperty('--jp', '0');
+        return;
       }
+      hero.classList.add('is-journey');
+      /* Same-document rects taken in the same frame: the scroll offset
+         cancels out of the deltas. */
+      const a = jAnchor.getBoundingClientRect();
+      const s = jSlot.getBoundingClientRect();
+      jPhone.style.setProperty('--jdx', `${(a.left + a.width / 2) - (s.left + s.width / 2)}px`);
+      jPhone.style.setProperty('--jdy', `${(a.top + a.height / 2) - (s.top + s.height / 2)}px`);
+      /* The flight completes as the Mac reaches centre stage. */
+      jEndY = Math.max(1, scrollY + s.top + s.height / 2 - innerHeight / 2);
     }
 
-    /* 4 — Header hairline. */
-    const root = document.documentElement;
-    function syncHeader() {
-      root.classList.toggle('is-stuck', scrollY > 8);
+    function syncJourney() {
+      if (!hero || !jPhone || !wide.matches) return;
+      const p = Math.min(1, Math.max(0, scrollY / jEndY));
+      /* Eased here rather than in CSS so the transform is one multiplication:
+         (1-p)² keeps full speed leaving the headline and settles into the
+         landing instead of stopping dead. Snapped to exactly 0 at the end —
+         the ease approaches zero asymptotically, and a lingering near-identity
+         transform is what left the landed phone's text on a stale raster. */
+      const jp = (1 - p) * (1 - p);
+      jPhone.style.setProperty('--jp', jp < 0.001 ? '0' : jp.toFixed(4));
+      hero.classList.toggle('is-landed', p > 0.72);
     }
+
+    /* The header hairline lives in Header.astro's own script — it is state,
+       not motion, so it must work on every page and under reduced motion. */
 
     let ticking = false;
     function onScroll() {
@@ -668,15 +960,29 @@ const CAPS = [
       ticking = true;
       requestAnimationFrame(() => {
         syncSteps();
-        syncScrub();
-        syncHeader();
+        syncJourney();
         ticking = false;
       });
     }
 
+    function onResize() {
+      measureJourney();
+      onScroll();
+    }
+
     addEventListener('scroll', onScroll, { passive: true, signal });
-    addEventListener('resize', onScroll, { passive: true, signal });
+    addEventListener('resize', onResize, { passive: true, signal });
+    measureJourney();
     onScroll();
+    /* The display face usually lands after first layout, and a swapped
+       headline can rewrap — which moves the anchor the journey was measured
+       from. Measure again once fonts settle (no-op if the engine has been
+       torn down in the meantime). */
+    document.fonts?.ready?.then(() => {
+      if (signal.aborted) return;
+      measureJourney();
+      onScroll();
+    });
   }
 
   start();

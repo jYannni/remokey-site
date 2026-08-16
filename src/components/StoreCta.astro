@@ -37,7 +37,8 @@ const beta = TESTFLIGHT_URL !== null;
       <a class="btn" href={APP_STORE_URL}>
         <Glyph name="phone" size={18} />
         <span class="btn__stack">
-          <span>Get it on the App Store</span>
+          {/* Apple's badge idiom, not Google Play's "Get it on". */}
+          <span>Download on the App Store</span>
           <span class="btn__sub">For iPhone</span>
         </span>
       </a>
@@ -87,7 +88,7 @@ const beta = TESTFLIGHT_URL !== null;
     padding: 0.9rem 1.1rem;
     border: 1px solid var(--line);
     border-radius: var(--r-md);
-    background: var(--graphite);
+    background: var(--card);
     color: var(--text-mute);
     font-size: var(--t-sm);
     line-height: 1.55;

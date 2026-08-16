@@ -6,8 +6,9 @@ description: Getting help with ReMoKey.
 
 # Support
 
-ReMoKey is made by one person. I read every message and reply as quickly as I
-reasonably can, but please expect days rather than hours.
+Every message is read, and every message gets a reply. Please allow a few
+days — answers come from the desk where ReMoKey is built, not a ticket
+queue.
 
 ## Reporting a problem
 

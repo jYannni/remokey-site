@@ -163,11 +163,14 @@ test('the walkthrough steps are readable when scripting is off', () => {
 
 // --- Weight ----------------------------------------------------------------
 
-test('the landing page ships under 120 KB of HTML', () => {
-  // Six inline device mockups is a lot of SVG. It compresses to roughly a tenth
-  // of this, but an unbounded budget is how a page quietly becomes a megabyte.
+test('the landing page ships under 160 KB of HTML', () => {
+  // Twelve inline device mockups — five Macs with a real desktop, menu bar
+  // and Dock, seven phones — is a lot of SVG. It compresses to roughly a
+  // tenth of this, but an unbounded budget is how a page quietly becomes a
+  // megabyte. Raised from 120 KB when the Mac grew its desktop (2026-08-16);
+  // the headroom above today's ~131 KB is deliberate slack, not an invitation.
   const bytes = statSync(new URL('../dist/index.html', import.meta.url)).size;
-  assert.ok(bytes < 120_000, `dist/index.html is ${(bytes / 1024).toFixed(1)} KB`);
+  assert.ok(bytes < 160_000, `dist/index.html is ${(bytes / 1024).toFixed(1)} KB`);
 });
 
 test('the display font ships as one file and under 60 KB', () => {
